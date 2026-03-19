@@ -16,7 +16,14 @@ WORKDIR /app
 COPY --from=builder /app/packages/mcp/dist ./dist
 COPY --from=builder /app/packages/mcp/package.json ./
 COPY --from=builder /app/node_modules ./node_modules
+
 ENV NODE_ENV=production
+ENV API_URL=http://api:3001
+
+# External config from Coolify build args
+ARG MCP_AUTH_TOKEN
+ENV MCP_AUTH_TOKEN=${MCP_AUTH_TOKEN}
+
 EXPOSE 3002
 HEALTHCHECK --interval=30s --timeout=5s CMD node -e "process.exit(0)"
 CMD ["node", "dist/index.js"]

@@ -2,9 +2,9 @@ services:
   postgres:
     image: postgres:16-alpine
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:-instapost}
-      POSTGRES_USER: ${POSTGRES_USER:-instapost}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-changeme}
+      POSTGRES_DB: instapost
+      POSTGRES_USER: instapost
+      POSTGRES_PASSWORD: instapost2026prod
     volumes:
       - pgdata:/var/lib/postgresql/data
     restart: unless-stopped
@@ -19,12 +19,12 @@ services:
 
   redis:
     image: redis:7-alpine
-    command: redis-server --requirepass ${REDIS_PASSWORD:-changeme}
+    command: redis-server --requirepass instapost2026prod
     volumes:
       - redisdata:/data
     restart: unless-stopped
     healthcheck:
-      test: ['CMD', 'redis-cli', '-a', '${REDIS_PASSWORD:-changeme}', 'ping']
+      test: ['CMD', 'redis-cli', '-a', 'instapost2026prod', 'ping']
       interval: 10s
       timeout: 5s
       retries: 10
@@ -36,8 +36,8 @@ services:
     image: minio/minio:latest
     command: server /data --console-address ":9001"
     environment:
-      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY:-minioadmin}
-      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:-minioadmin}
+      MINIO_ROOT_USER: instapostminio
+      MINIO_ROOT_PASSWORD: instapost2026minio
     ports:
       - '9000:9000'
       - '9001:9001'
@@ -59,25 +59,6 @@ services:
       dockerfile: packages/api/Dockerfile
     ports:
       - '3001:3001'
-    environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER:-instapost}:${DB_PASSWORD:-changeme}@postgres:5432/${POSTGRES_DB:-instapost}
-      REDIS_URL: redis://:${REDIS_PASSWORD:-changeme}@redis:6379
-      MINIO_ENDPOINT: minio
-      MINIO_PORT: 9000
-      MINIO_USE_SSL: "false"
-      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-minioadmin}
-      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-minioadmin}
-      MINIO_PUBLIC_URL: ${MINIO_PUBLIC_URL:-http://localhost:9000}
-      MINIO_BUCKET: instapost-images
-      INSTAGRAM_ACCESS_TOKEN: ${INSTAGRAM_ACCESS_TOKEN:-}
-      INSTAGRAM_USER_ID: ${INSTAGRAM_USER_ID:-}
-      NANO_BANANA_API_KEY: ${NANO_BANANA_API_KEY:-}
-      NANO_BANANA_PROVIDER: google
-      JWT_SECRET: ${JWT_SECRET:-defaultsecret}
-      JWT_EXPIRES_IN: 7d
-      NODE_ENV: production
-      PORT: 3001
-      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
     depends_on:
       postgres:
         condition: service_healthy
@@ -93,8 +74,6 @@ services:
     build:
       context: .
       dockerfile: packages/web/Dockerfile
-      args:
-        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3001}
     ports:
       - '3000:3000'
     depends_on:
@@ -107,10 +86,6 @@ services:
     build:
       context: .
       dockerfile: packages/bot/Dockerfile
-    environment:
-      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
-      TELEGRAM_ALLOWED_CHAT_IDS: ${TELEGRAM_ALLOWED_CHAT_IDS:-}
-      API_URL: http://api:3001
     depends_on:
       - api
     restart: unless-stopped
@@ -123,9 +98,6 @@ services:
       dockerfile: packages/mcp/Dockerfile
     ports:
       - '3002:3002'
-    environment:
-      MCP_AUTH_TOKEN: ${MCP_AUTH_TOKEN:-}
-      API_URL: http://api:3001
     depends_on:
       - api
     restart: unless-stopped

@@ -16,6 +16,15 @@ WORKDIR /app
 COPY --from=builder /app/packages/bot/dist ./dist
 COPY --from=builder /app/packages/bot/package.json ./
 COPY --from=builder /app/node_modules ./node_modules
+
 ENV NODE_ENV=production
+ENV API_URL=http://api:3001
+
+# External config from Coolify build args
+ARG TELEGRAM_BOT_TOKEN
+ARG TELEGRAM_ALLOWED_CHAT_IDS
+ENV TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+ENV TELEGRAM_ALLOWED_CHAT_IDS=${TELEGRAM_ALLOWED_CHAT_IDS}
+
 HEALTHCHECK --interval=60s --timeout=5s CMD node -e "process.exit(0)"
 CMD ["node", "dist/index.js"]
