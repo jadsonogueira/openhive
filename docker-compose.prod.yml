@@ -86,6 +86,9 @@ services:
     build:
       context: .
       dockerfile: packages/bot/Dockerfile
+    environment:
+      API_URL: http://api:3001
+      API_TOKEN: instapost_service_2026
     depends_on:
       - api
     restart: unless-stopped
