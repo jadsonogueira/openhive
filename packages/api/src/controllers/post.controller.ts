@@ -8,14 +8,22 @@ function paramId(req: AuthRequest): string {
   return req.params.id as string;
 }
 
+async function resolveUserId(reqUserId: string): Promise<string> {
+  if (reqUserId !== 'service') return reqUserId;
+  const firstUser = await prisma.user.findFirst({ orderBy: { createdAt: 'asc' } });
+  if (!firstUser) throw new Error('No users found - register at least one user first');
+  return firstUser.id;
+}
+
 export async function createPost(req: AuthRequest, res: Response) {
   try {
+    const userId = await resolveUserId(req.userId!);
     const post = await prisma.post.create({
-      data: { ...req.body, userId: req.userId! },
+      data: { ...req.body, userId },
     });
     res.status(201).json({ success: true, data: post });
-  } catch (err) {
-    res.status(500).json({ success: false, error: 'Failed to create post' });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err?.message || 'Failed to create post' });
   }
 }
 
@@ -25,7 +33,8 @@ export async function listPosts(req: AuthRequest, res: Response) {
     const source = req.query.source as string | undefined;
     const page = Number(req.query.page) || 1;
     const take = Number(req.query.limit) || 20;
-    const where: Record<string, unknown> = { userId: req.userId };
+    const userId = await resolveUserId(req.userId!);
+    const where: Record<string, unknown> = { userId };
     if (status) where.status = status;
     if (source) where.source = source;
 
