@@ -20,6 +20,7 @@ COPY --from=builder /app/packages/web/.next/static ./packages/web/.next/static
 COPY --from=builder /app/packages/web/public ./packages/web/public
 ENV NODE_ENV=production
 ENV HOSTNAME=0.0.0.0
+ENV API_INTERNAL_URL=http://api:3001
 EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=5s CMD wget -qO- http://localhost:3000 || exit 1
 CMD ["node", "packages/web/server.js"]

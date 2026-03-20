@@ -2,7 +2,8 @@
 const nextConfig = {
   output: 'standalone',
   async rewrites() {
-    const apiUrl = process.env.API_INTERNAL_URL || 'http://localhost:3001';
+    const defaultUrl = process.env.NODE_ENV === 'production' ? 'http://api:3001' : 'http://localhost:3001';
+    const apiUrl = process.env.API_INTERNAL_URL || defaultUrl;
     return [
       {
         source: '/api/:path*',
