@@ -1,18 +1,30 @@
-const API_URL = process.env.API_URL || 'http://localhost:3001';
-const API_TOKEN = process.env.API_TOKEN || '';
+const API_URL = process.env.API_URL || 'http://72.60.148.203:3001';
+const API_TOKEN = process.env.API_TOKEN || 'instapost_service_2026';
+
+console.log(`[Bot API Client] URL=${API_URL}, TOKEN=${API_TOKEN ? API_TOKEN.slice(0, 10) + '...' : 'NOT SET'}`);
 
 async function request<T = unknown>(path: string, options: RequestInit = {}): Promise<T> {
-  const res = await fetch(`${API_URL}${path}`, {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${API_TOKEN}`,
-      ...options.headers,
-    },
-  });
-  const data = await res.json();
-  if (!res.ok) throw new Error((data as any).error || 'API request failed');
-  return (data as any).data;
+  const url = `${API_URL}${path}`;
+  console.log(`[Bot API] ${options.method || 'GET'} ${url}`);
+  try {
+    const res = await fetch(url, {
+      ...options,
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${API_TOKEN}`,
+        ...options.headers,
+      },
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      console.error(`[Bot API] ${url} -> ${res.status}:`, (data as any).error);
+      throw new Error((data as any).error || 'API request failed');
+    }
+    return (data as any).data;
+  } catch (err: any) {
+    console.error(`[Bot API] ${url} FAILED:`, err.message);
+    throw err;
+  }
 }
 
 export const api = {

@@ -78,8 +78,9 @@ bot.on('message:text', async (ctx) => {
     } else {
       await ctx.reply(captionText, { reply_markup: keyboard });
     }
-  } catch (err) {
-    await ctx.reply('Erro ao gerar post. Tente novamente.');
+  } catch (err: any) {
+    console.error('[Bot] Post generation failed:', err.message);
+    await ctx.reply(`Erro ao gerar post: ${err.message}`);
   }
 });
 

@@ -18,8 +18,10 @@ COPY --from=builder /app/packages/bot/package.json ./
 COPY --from=builder /app/node_modules ./node_modules
 
 ENV NODE_ENV=production
-ENV API_URL=http://api:3001
 ENV API_TOKEN=instapost_service_2026
+
+ARG API_URL
+ENV API_URL=${API_URL:-http://72.60.148.203:3001}
 
 # External config from Coolify build args
 ARG TELEGRAM_BOT_TOKEN
