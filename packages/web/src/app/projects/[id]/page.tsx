@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { api } from '../../../lib/api';
-import { ArrowLeft, Plus, Trash2, Save, ExternalLink, CheckSquare, Square, Loader2, FolderKanban, ChevronDown, ChevronUp } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Save, ExternalLink, CheckSquare, Square, Loader2, FolderKanban, ChevronDown, ChevronUp, Pencil, X } from 'lucide-react';
 
 const STATUSES = [
   { value: 'PLANNING', label: 'Planejamento', color: 'bg-amber-50 text-amber-600 border-amber-200' },
@@ -25,6 +25,10 @@ export default function ProjectDetail() {
   const [driveLinkEditing, setDriveLinkEditing] = useState<string | null>(null);
   const [driveLinkValue, setDriveLinkValue] = useState('');
   const [expandedModules, setExpandedModules] = useState<Set<string>>(new Set());
+  const [editingModule, setEditingModule] = useState<string | null>(null);
+  const [editTitle, setEditTitle] = useState('');
+  const [editContent, setEditContent] = useState('');
+  const [savingModule, setSavingModule] = useState(false);
 
   function toggleExpand(moduleId: string) {
     setExpandedModules((prev) => {
@@ -33,6 +37,27 @@ export default function ProjectDetail() {
       else next.add(moduleId);
       return next;
     });
+  }
+
+  function startEditing(mod: any) {
+    setEditingModule(mod.id);
+    setEditTitle(mod.title);
+    setEditContent(mod.content || '');
+    setExpandedModules((prev) => new Set(prev).add(mod.id));
+  }
+
+  async function handleSaveModule(moduleId: string) {
+    if (!editTitle.trim()) return;
+    setSavingModule(true);
+    try {
+      await api.updateModule(id, moduleId, { title: editTitle, content: editContent || null });
+      setProject((p: any) => ({
+        ...p,
+        modules: p.modules.map((m: any) => m.id === moduleId ? { ...m, title: editTitle, content: editContent || null } : m),
+      }));
+      setEditingModule(null);
+    } catch { alert('Erro ao salvar modulo'); }
+    setSavingModule(false);
   }
 
   async function loadProject() {
@@ -208,57 +233,107 @@ export default function ProjectDetail() {
                         )}
                       </button>
                       <div className="flex-1 min-w-0">
-                        <button
-                          onClick={() => toggleExpand(mod.id)}
-                          className="w-full text-left group"
-                        >
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs font-bold text-text-muted">{idx + 1}.</span>
-                            <p className={`text-sm font-medium flex-1 ${mod.isRecorded ? 'text-status-published line-through' : 'text-text-primary'}`}>
-                              {mod.title}
-                            </p>
-                            {mod.content && (
-                              expandedModules.has(mod.id)
-                                ? <ChevronUp className="w-4 h-4 text-text-muted flex-shrink-0" strokeWidth={1.5} />
-                                : <ChevronDown className="w-4 h-4 text-text-muted flex-shrink-0 group-hover:text-primary transition-colors" strokeWidth={1.5} />
-                            )}
-                          </div>
-                          {mod.content && (
-                            <p className={`text-xs text-text-secondary mt-1.5 whitespace-pre-wrap ${expandedModules.has(mod.id) ? '' : 'line-clamp-2'}`}>{mod.content}</p>
-                          )}
-                        </button>
-                        {/* Drive link */}
-                        <div className="mt-2 flex items-center gap-2">
-                          {driveLinkEditing === mod.id ? (
-                            <div className="flex items-center gap-2 flex-1">
+                        {editingModule === mod.id ? (
+                          /* Edit mode */
+                          <div className="space-y-3">
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs font-bold text-text-muted">{idx + 1}.</span>
                               <input
-                                type="url"
-                                value={driveLinkValue}
-                                onChange={(e) => setDriveLinkValue(e.target.value)}
-                                placeholder="https://drive.google.com/..."
-                                className="input-field text-xs flex-1"
+                                type="text"
+                                value={editTitle}
+                                onChange={(e) => setEditTitle(e.target.value)}
+                                className="input-field flex-1 text-sm font-medium"
+                                maxLength={200}
                                 autoFocus
                               />
-                              <button onClick={() => handleSaveDriveLink(mod.id)} className="px-2.5 py-1.5 rounded-badge text-xs font-semibold bg-primary/10 text-primary hover:bg-primary/20 transition-colors">
-                                <Save className="w-3 h-3" />
-                              </button>
-                              <button onClick={() => setDriveLinkEditing(null)} className="text-xs text-text-muted hover:text-text-primary">Cancelar</button>
                             </div>
-                          ) : mod.driveLink ? (
-                            <a href={mod.driveLink} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-xs text-primary hover:underline">
-                              <ExternalLink className="w-3 h-3" />
-                              Link do Drive
-                            </a>
-                          ) : null}
-                          {driveLinkEditing !== mod.id && (
+                            <textarea
+                              value={editContent}
+                              onChange={(e) => setEditContent(e.target.value)}
+                              placeholder="Conteudo / descricao do modulo..."
+                              className="input-field text-xs min-h-[120px] resize-y w-full"
+                            />
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={() => handleSaveModule(mod.id)}
+                                disabled={savingModule || !editTitle.trim()}
+                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-primary text-white hover:bg-primary/90 transition-colors disabled:opacity-50"
+                              >
+                                <Save className="w-3 h-3" strokeWidth={2} />
+                                {savingModule ? 'Salvando...' : 'Salvar'}
+                              </button>
+                              <button
+                                onClick={() => setEditingModule(null)}
+                                className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium text-text-muted hover:text-text-primary transition-colors"
+                              >
+                                Cancelar
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          /* View mode */
+                          <>
                             <button
-                              onClick={() => { setDriveLinkEditing(mod.id); setDriveLinkValue(mod.driveLink || ''); }}
-                              className="text-[11px] text-text-muted hover:text-primary transition-colors"
+                              onClick={() => toggleExpand(mod.id)}
+                              className="w-full text-left group"
                             >
-                              {mod.driveLink ? 'Editar link' : '+ Link Drive'}
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs font-bold text-text-muted">{idx + 1}.</span>
+                                <p className={`text-sm font-medium flex-1 ${mod.isRecorded ? 'text-status-published line-through' : 'text-text-primary'}`}>
+                                  {mod.title}
+                                </p>
+                                {mod.content && (
+                                  expandedModules.has(mod.id)
+                                    ? <ChevronUp className="w-4 h-4 text-text-muted flex-shrink-0" strokeWidth={1.5} />
+                                    : <ChevronDown className="w-4 h-4 text-text-muted flex-shrink-0 group-hover:text-primary transition-colors" strokeWidth={1.5} />
+                                )}
+                              </div>
+                              {mod.content && (
+                                <p className={`text-xs text-text-secondary mt-1.5 whitespace-pre-wrap ${expandedModules.has(mod.id) ? '' : 'line-clamp-2'}`}>{mod.content}</p>
+                              )}
                             </button>
-                          )}
-                        </div>
+                            {/* Actions row */}
+                            <div className="mt-2 flex items-center gap-2">
+                              <button
+                                onClick={() => startEditing(mod)}
+                                className="flex items-center gap-1 text-[11px] text-text-muted hover:text-primary transition-colors"
+                              >
+                                <Pencil className="w-3 h-3" strokeWidth={1.5} />
+                                Editar
+                              </button>
+                              <span className="text-text-muted/30">|</span>
+                              {driveLinkEditing === mod.id ? (
+                                <div className="flex items-center gap-2 flex-1">
+                                  <input
+                                    type="url"
+                                    value={driveLinkValue}
+                                    onChange={(e) => setDriveLinkValue(e.target.value)}
+                                    placeholder="https://drive.google.com/..."
+                                    className="input-field text-xs flex-1"
+                                    autoFocus
+                                  />
+                                  <button onClick={() => handleSaveDriveLink(mod.id)} className="px-2.5 py-1.5 rounded-badge text-xs font-semibold bg-primary/10 text-primary hover:bg-primary/20 transition-colors">
+                                    <Save className="w-3 h-3" />
+                                  </button>
+                                  <button onClick={() => setDriveLinkEditing(null)} className="text-xs text-text-muted hover:text-text-primary">Cancelar</button>
+                                </div>
+                              ) : mod.driveLink ? (
+                                <a href={mod.driveLink} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-xs text-primary hover:underline">
+                                  <ExternalLink className="w-3 h-3" />
+                                  Link do Drive
+                                </a>
+                              ) : null}
+                              {driveLinkEditing !== mod.id && (
+                                <button
+                                  onClick={() => { setDriveLinkEditing(mod.id); setDriveLinkValue(mod.driveLink || ''); }}
+                                  className="text-[11px] text-text-muted hover:text-primary transition-colors"
+                                >
+                                  {mod.driveLink ? 'Editar link' : '+ Link Drive'}
+                                </button>
+                              )}
+                            </div>
+                          </>
+                        )}
                       </div>
                       <button onClick={() => handleDeleteModule(mod.id)} className="p-1.5 rounded text-text-muted hover:text-status-failed transition-colors flex-shrink-0">
                         <Trash2 className="w-3.5 h-3.5" strokeWidth={1.5} />
