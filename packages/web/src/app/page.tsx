@@ -253,7 +253,7 @@ export default function Dashboard() {
                 </a>
               </div>
               <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
-                {igMedia.map((media) => (
+                {igMedia.slice(0, 6).map((media) => (
                   <a
                     key={media.id}
                     href={media.permalink}
