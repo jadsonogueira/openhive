@@ -116,129 +116,6 @@ export default function Dashboard() {
         </Link>
       </div>
 
-      {/* Instagram Profile + Stats Row */}
-      {igProfile && (
-        <div className="card p-5 mb-6 relative overflow-hidden">
-          <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-[#833AB4] via-[#E1306C] to-[#F77737]" />
-          <div className="flex flex-col lg:flex-row lg:items-center gap-5">
-            {/* Profile */}
-            <div className="flex items-center gap-3 flex-shrink-0">
-              <div className="w-12 h-12 rounded-full p-[2px] bg-gradient-to-tr from-[#833AB4] via-[#E1306C] to-[#F77737]">
-                <img
-                  src={igProfile.profile_picture_url}
-                  alt={igProfile.username}
-                  className="w-full h-full rounded-full object-cover border-2 border-white"
-                />
-              </div>
-              <div>
-                <div className="flex items-center gap-1.5">
-                  <h2 className="text-[15px] font-bold text-text-primary">{igProfile.name}</h2>
-                  <Instagram className="w-3.5 h-3.5 text-[#E1306C]" />
-                </div>
-                <p className="text-xs text-text-secondary">@{igProfile.username}</p>
-              </div>
-            </div>
-
-            {/* Divider */}
-            <div className="hidden lg:block w-px h-10 bg-border" />
-
-            {/* Stats */}
-            <div className="flex items-center gap-5 lg:gap-8 flex-wrap">
-              <div className="text-center">
-                <p className="text-xl font-bold text-text-primary">{formatNumber(igProfile.followers_count)}</p>
-                <p className="text-[10px] text-text-muted uppercase tracking-wider">Seguidores</p>
-              </div>
-              <div className="text-center">
-                <p className="text-xl font-bold text-text-primary">{formatNumber(igProfile.follows_count)}</p>
-                <p className="text-[10px] text-text-muted uppercase tracking-wider">Seguindo</p>
-              </div>
-              <div className="text-center">
-                <p className="text-xl font-bold text-text-primary">{igProfile.media_count}</p>
-                <p className="text-[10px] text-text-muted uppercase tracking-wider">Posts</p>
-              </div>
-
-              {/* Engagement divider */}
-              <div className="hidden sm:block w-px h-8 bg-border" />
-
-              <div className="text-center">
-                <p className="text-xl font-bold text-[#E1306C]">{formatNumber(totalLikes)}</p>
-                <p className="text-[10px] text-text-muted uppercase tracking-wider">Curtidas</p>
-              </div>
-              <div className="text-center">
-                <p className="text-xl font-bold text-[#833AB4]">{formatNumber(totalComments)}</p>
-                <p className="text-[10px] text-text-muted uppercase tracking-wider">Comentarios</p>
-              </div>
-              <div className="text-center">
-                <p className="text-xl font-bold text-text-primary">{avgEngagement}</p>
-                <p className="text-[10px] text-text-muted uppercase tracking-wider">Eng. Medio</p>
-              </div>
-            </div>
-
-            {/* Website link */}
-            {igProfile.website && (
-              <a
-                href={igProfile.website}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="lg:ml-auto text-xs text-primary hover:underline flex items-center gap-1 font-medium flex-shrink-0"
-              >
-                <ExternalLink className="w-3 h-3" /> Website
-              </a>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Instagram Posts Grid */}
-      {igProfile && igMedia.length > 0 && (
-        <div className="mb-6">
-          <div className="flex items-center justify-between mb-3">
-            <p className="text-xs font-semibold text-text-secondary uppercase tracking-wider">Posts Recentes no Instagram</p>
-            <a
-              href={`https://instagram.com/${igProfile.username}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-xs text-primary hover:underline font-medium flex items-center gap-1"
-            >
-              Ver perfil <ExternalLink className="w-3 h-3" />
-            </a>
-          </div>
-          <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
-            {igMedia.slice(0, 6).map((media) => (
-              <a
-                key={media.id}
-                href={media.permalink}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="group relative aspect-square rounded-xl overflow-hidden bg-bg-main"
-              >
-                {media.media_url ? (
-                  <img
-                    src={media.media_url}
-                    alt=""
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center bg-bg-card">
-                    <ImageIcon className="w-8 h-8 text-text-muted" />
-                  </div>
-                )}
-                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
-                  <div className="flex items-center gap-3 text-white text-xs font-semibold">
-                    <span className="flex items-center gap-1">
-                      <Heart className="w-3.5 h-3.5" fill="white" /> {media.like_count ?? 0}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <MessageCircle className="w-3.5 h-3.5" fill="white" /> {media.comments_count ?? 0}
-                    </span>
-                  </div>
-                </div>
-              </a>
-            ))}
-          </div>
-        </div>
-      )}
-
       {/* Metric Cards - Post stats only */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-6">
         {[
@@ -352,6 +229,93 @@ export default function Dashboard() {
           )}
         </div>
       </div>
+
+      {/* Instagram Profile + Recent Media */}
+      {igProfile && (
+        <div className="card p-6 mb-6">
+          {/* Profile Row */}
+          <div className="flex items-center gap-4 mb-5">
+            {igProfile.profile_picture_url ? (
+              <img src={igProfile.profile_picture_url} alt={igProfile.username} className="w-14 h-14 rounded-full object-cover border-2 border-primary/20" />
+            ) : (
+              <div className="w-14 h-14 rounded-full bg-gradient-to-br from-primary/20 to-accent-pink/20 flex items-center justify-center">
+                <Instagram className="w-7 h-7 text-primary" strokeWidth={1.5} />
+              </div>
+            )}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2">
+                <h2 className="text-section-title text-text-primary">@{igProfile.username}</h2>
+                {igProfile.website && (
+                  <a href={igProfile.website} target="_blank" rel="noopener noreferrer" className="text-text-muted hover:text-primary transition-colors">
+                    <ExternalLink className="w-3.5 h-3.5" strokeWidth={1.5} />
+                  </a>
+                )}
+              </div>
+              {igProfile.name && <p className="text-xs text-text-secondary truncate">{igProfile.name}</p>}
+            </div>
+            <div className="hidden sm:flex items-center gap-5 text-center">
+              <div className="flex items-center gap-1.5">
+                <Users className="w-4 h-4 text-text-muted" strokeWidth={1.5} />
+                <span className="text-sm font-bold text-text-primary">{formatNumber(igProfile.followers_count)}</span>
+                <span className="text-[11px] text-text-secondary">Seguidores</span>
+              </div>
+              <div className="w-px h-6 bg-border" />
+              <div className="flex items-center gap-1.5">
+                <UserPlus className="w-4 h-4 text-text-muted" strokeWidth={1.5} />
+                <span className="text-sm font-bold text-text-primary">{formatNumber(igProfile.follows_count)}</span>
+                <span className="text-[11px] text-text-secondary">Seguindo</span>
+              </div>
+              <div className="w-px h-6 bg-border" />
+              <div className="flex items-center gap-1.5">
+                <ImageIcon className="w-4 h-4 text-text-muted" strokeWidth={1.5} />
+                <span className="text-sm font-bold text-text-primary">{formatNumber(igProfile.media_count)}</span>
+                <span className="text-[11px] text-text-secondary">Posts</span>
+              </div>
+              <div className="w-px h-6 bg-border" />
+              <div className="flex items-center gap-1.5">
+                <Heart className="w-4 h-4 text-pink-500" strokeWidth={1.5} />
+                <span className="text-sm font-bold text-pink-600">{formatNumber(totalLikes)}</span>
+                <span className="text-[11px] text-text-secondary">Curtidas</span>
+              </div>
+              <div className="w-px h-6 bg-border" />
+              <div className="flex items-center gap-1.5">
+                <MessageCircle className="w-4 h-4 text-purple-500" strokeWidth={1.5} />
+                <span className="text-sm font-bold text-purple-600">{formatNumber(totalComments)}</span>
+                <span className="text-[11px] text-text-secondary">Comentarios</span>
+              </div>
+              <div className="w-px h-6 bg-border" />
+              <div className="flex items-center gap-1.5">
+                <TrendingUp className="w-4 h-4 text-text-muted" strokeWidth={1.5} />
+                <span className="text-sm font-bold text-text-primary">{formatNumber(avgEngagement)}</span>
+                <span className="text-[11px] text-text-secondary">Eng. Medio</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Media Grid */}
+          {igMedia.length > 0 && (
+            <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+              {igMedia.slice(0, 6).map((media) => (
+                <a key={media.id} href={media.permalink} target="_blank" rel="noopener noreferrer" className="group relative aspect-square rounded-lg overflow-hidden bg-bg-main">
+                  {media.media_url ? (
+                    <img src={media.media_url} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <ImageIcon className="w-6 h-6 text-text-muted" strokeWidth={1} />
+                    </div>
+                  )}
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
+                    <div className="flex items-center gap-3 text-white text-xs font-medium">
+                      <span className="flex items-center gap-1"><Heart className="w-3.5 h-3.5" />{media.like_count ?? 0}</span>
+                      <span className="flex items-center gap-1"><MessageCircle className="w-3.5 h-3.5" />{media.comments_count ?? 0}</span>
+                    </div>
+                  </div>
+                </a>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Quick Actions */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
