@@ -19,6 +19,7 @@ import {
   UserPlus,
   ExternalLink,
   Image as ImageIcon,
+  TrendingUp,
 } from 'lucide-react';
 
 interface Stats {
@@ -51,49 +52,6 @@ interface IGMedia {
   like_count: number;
   comments_count: number;
 }
-
-const METRIC_CARDS = [
-  {
-    key: 'total',
-    label: 'TOTAL POSTS',
-    icon: FileText,
-    accent: 'from-primary to-accent-pink',
-    iconBg: 'bg-primary/10',
-    iconColor: 'text-primary',
-  },
-  {
-    key: 'draft',
-    label: 'RASCUNHOS',
-    icon: Edit3,
-    accent: 'from-status-draft to-status-draft',
-    iconBg: 'bg-gray-100',
-    iconColor: 'text-status-draft',
-  },
-  {
-    key: 'scheduled',
-    label: 'AGENDADOS',
-    icon: Clock,
-    accent: 'from-status-scheduled to-status-scheduled',
-    iconBg: 'bg-blue-50',
-    iconColor: 'text-status-scheduled',
-  },
-  {
-    key: 'published',
-    label: 'PUBLICADOS',
-    icon: CheckCircle,
-    accent: 'from-status-published to-status-published',
-    iconBg: 'bg-emerald-50',
-    iconColor: 'text-status-published',
-  },
-  {
-    key: 'failed',
-    label: 'FALHAS',
-    icon: AlertCircle,
-    accent: 'from-status-failed to-status-failed',
-    iconBg: 'bg-red-50',
-    iconColor: 'text-status-failed',
-  },
-];
 
 function formatNumber(n?: number): string {
   if (n == null) return '0';
@@ -140,15 +98,14 @@ export default function Dashboard() {
     load();
   }, []);
 
-  const totalEngagement = igMedia.reduce((sum, m) => sum + (m.like_count ?? 0) + (m.comments_count ?? 0), 0);
-  const avgEngagement = igMedia.length > 0 ? Math.round(totalEngagement / igMedia.length) : 0;
   const totalLikes = igMedia.reduce((sum, m) => sum + (m.like_count ?? 0), 0);
   const totalComments = igMedia.reduce((sum, m) => sum + (m.comments_count ?? 0), 0);
+  const avgEngagement = igMedia.length > 0 ? Math.round((totalLikes + totalComments) / igMedia.length) : 0;
 
   return (
     <div className="max-w-7xl mx-auto animate-fade-in">
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-page-title text-text-primary">Dashboard</h1>
           <p className="text-sm text-text-secondary mt-1">Visao geral dos seus posts</p>
@@ -159,145 +116,142 @@ export default function Dashboard() {
         </Link>
       </div>
 
-      {/* Instagram Account Card */}
+      {/* Instagram Profile + Stats Row */}
       {igProfile && (
-        <div className="card p-6 mb-8 relative overflow-hidden">
+        <div className="card p-5 mb-6 relative overflow-hidden">
           <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-[#833AB4] via-[#E1306C] to-[#F77737]" />
-          <div className="flex flex-col lg:flex-row gap-6">
-            {/* Profile Info */}
-            <div className="flex items-center gap-4 flex-shrink-0">
-              <div className="relative">
-                <div className="w-16 h-16 rounded-full p-[2px] bg-gradient-to-tr from-[#833AB4] via-[#E1306C] to-[#F77737]">
-                  <img
-                    src={igProfile.profile_picture_url}
-                    alt={igProfile.username}
-                    className="w-full h-full rounded-full object-cover border-2 border-white"
-                  />
-                </div>
+          <div className="flex flex-col lg:flex-row lg:items-center gap-5">
+            {/* Profile */}
+            <div className="flex items-center gap-3 flex-shrink-0">
+              <div className="w-12 h-12 rounded-full p-[2px] bg-gradient-to-tr from-[#833AB4] via-[#E1306C] to-[#F77737]">
+                <img
+                  src={igProfile.profile_picture_url}
+                  alt={igProfile.username}
+                  className="w-full h-full rounded-full object-cover border-2 border-white"
+                />
               </div>
               <div>
-                <div className="flex items-center gap-2">
-                  <h2 className="text-lg font-bold text-text-primary">{igProfile.name}</h2>
-                  <Instagram className="w-4 h-4 text-[#E1306C]" />
+                <div className="flex items-center gap-1.5">
+                  <h2 className="text-[15px] font-bold text-text-primary">{igProfile.name}</h2>
+                  <Instagram className="w-3.5 h-3.5 text-[#E1306C]" />
                 </div>
-                <p className="text-sm text-text-secondary">@{igProfile.username}</p>
-                {igProfile.biography && (
-                  <p className="text-xs text-text-muted mt-1 max-w-xs truncate">{igProfile.biography}</p>
-                )}
+                <p className="text-xs text-text-secondary">@{igProfile.username}</p>
               </div>
             </div>
+
+            {/* Divider */}
+            <div className="hidden lg:block w-px h-10 bg-border" />
 
             {/* Stats */}
-            <div className="flex items-center gap-6 lg:gap-10 lg:ml-auto">
+            <div className="flex items-center gap-5 lg:gap-8 flex-wrap">
               <div className="text-center">
-                <p className="text-2xl font-bold text-text-primary">{formatNumber(igProfile.followers_count)}</p>
-                <p className="text-xs text-text-secondary flex items-center gap-1 justify-center">
-                  <Users className="w-3 h-3" /> Seguidores
-                </p>
+                <p className="text-xl font-bold text-text-primary">{formatNumber(igProfile.followers_count)}</p>
+                <p className="text-[10px] text-text-muted uppercase tracking-wider">Seguidores</p>
               </div>
               <div className="text-center">
-                <p className="text-2xl font-bold text-text-primary">{formatNumber(igProfile.follows_count)}</p>
-                <p className="text-xs text-text-secondary flex items-center gap-1 justify-center">
-                  <UserPlus className="w-3 h-3" /> Seguindo
-                </p>
+                <p className="text-xl font-bold text-text-primary">{formatNumber(igProfile.follows_count)}</p>
+                <p className="text-[10px] text-text-muted uppercase tracking-wider">Seguindo</p>
               </div>
               <div className="text-center">
-                <p className="text-2xl font-bold text-text-primary">{igProfile.media_count}</p>
-                <p className="text-xs text-text-secondary flex items-center gap-1 justify-center">
-                  <ImageIcon className="w-3 h-3" /> Posts
-                </p>
+                <p className="text-xl font-bold text-text-primary">{igProfile.media_count}</p>
+                <p className="text-[10px] text-text-muted uppercase tracking-wider">Posts</p>
               </div>
-              <div className="text-center">
-                <p className="text-2xl font-bold text-text-primary">{formatNumber(totalLikes)}</p>
-                <p className="text-xs text-text-secondary flex items-center gap-1 justify-center">
-                  <Heart className="w-3 h-3" /> Curtidas
-                </p>
-              </div>
-              <div className="text-center">
-                <p className="text-2xl font-bold text-text-primary">{formatNumber(totalComments)}</p>
-                <p className="text-xs text-text-secondary flex items-center gap-1 justify-center">
-                  <MessageCircle className="w-3 h-3" /> Comentarios
-                </p>
-              </div>
-              <div className="text-center">
-                <p className="text-2xl font-bold text-text-primary">{avgEngagement}</p>
-                <p className="text-xs text-text-secondary flex items-center gap-1 justify-center">
-                  <Heart className="w-3 h-3" /> Eng. Medio
-                </p>
-              </div>
-              {igProfile.website && (
-                <a
-                  href={igProfile.website}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-xs text-primary hover:underline flex items-center gap-1 font-medium"
-                >
-                  <ExternalLink className="w-3 h-3" /> Website
-                </a>
-              )}
-            </div>
-          </div>
 
-          {/* Recent Instagram Posts Grid */}
-          {igMedia.length > 0 && (
-            <div className="mt-5 pt-5 border-t border-[#F0EFEC]">
-              <div className="flex items-center justify-between mb-3">
-                <p className="text-xs font-semibold text-text-secondary uppercase tracking-wider">Posts Recentes no Instagram</p>
-                <a
-                  href={`https://instagram.com/${igProfile.username}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-xs text-primary hover:underline font-medium flex items-center gap-1"
-                >
-                  Ver perfil <ExternalLink className="w-3 h-3" />
-                </a>
+              {/* Engagement divider */}
+              <div className="hidden sm:block w-px h-8 bg-border" />
+
+              <div className="text-center">
+                <p className="text-xl font-bold text-[#E1306C]">{formatNumber(totalLikes)}</p>
+                <p className="text-[10px] text-text-muted uppercase tracking-wider">Curtidas</p>
               </div>
-              <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
-                {igMedia.slice(0, 6).map((media) => (
-                  <a
-                    key={media.id}
-                    href={media.permalink}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="group relative aspect-square rounded-xl overflow-hidden bg-bg-main"
-                  >
-                    {media.media_url ? (
-                      <img
-                        src={media.media_url}
-                        alt=""
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center bg-bg-card">
-                        <ImageIcon className="w-8 h-8 text-text-muted" />
-                      </div>
-                    )}
-                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
-                      <div className="flex items-center gap-3 text-white text-xs font-semibold">
-                        <span className="flex items-center gap-1">
-                          <Heart className="w-3.5 h-3.5" fill="white" /> {media.like_count ?? 0}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <MessageCircle className="w-3.5 h-3.5" fill="white" /> {media.comments_count ?? 0}
-                        </span>
-                      </div>
-                    </div>
-                  </a>
-                ))}
+              <div className="text-center">
+                <p className="text-xl font-bold text-[#833AB4]">{formatNumber(totalComments)}</p>
+                <p className="text-[10px] text-text-muted uppercase tracking-wider">Comentarios</p>
+              </div>
+              <div className="text-center">
+                <p className="text-xl font-bold text-text-primary">{avgEngagement}</p>
+                <p className="text-[10px] text-text-muted uppercase tracking-wider">Eng. Medio</p>
               </div>
             </div>
-          )}
+
+            {/* Website link */}
+            {igProfile.website && (
+              <a
+                href={igProfile.website}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="lg:ml-auto text-xs text-primary hover:underline flex items-center gap-1 font-medium flex-shrink-0"
+              >
+                <ExternalLink className="w-3 h-3" /> Website
+              </a>
+            )}
+          </div>
         </div>
       )}
 
-      {/* Metric Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-4 mb-8">
-        {METRIC_CARDS.map((card) => {
+      {/* Instagram Posts Grid */}
+      {igProfile && igMedia.length > 0 && (
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-xs font-semibold text-text-secondary uppercase tracking-wider">Posts Recentes no Instagram</p>
+            <a
+              href={`https://instagram.com/${igProfile.username}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs text-primary hover:underline font-medium flex items-center gap-1"
+            >
+              Ver perfil <ExternalLink className="w-3 h-3" />
+            </a>
+          </div>
+          <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+            {igMedia.slice(0, 6).map((media) => (
+              <a
+                key={media.id}
+                href={media.permalink}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group relative aspect-square rounded-xl overflow-hidden bg-bg-main"
+              >
+                {media.media_url ? (
+                  <img
+                    src={media.media_url}
+                    alt=""
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center bg-bg-card">
+                    <ImageIcon className="w-8 h-8 text-text-muted" />
+                  </div>
+                )}
+                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
+                  <div className="flex items-center gap-3 text-white text-xs font-semibold">
+                    <span className="flex items-center gap-1">
+                      <Heart className="w-3.5 h-3.5" fill="white" /> {media.like_count ?? 0}
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <MessageCircle className="w-3.5 h-3.5" fill="white" /> {media.comments_count ?? 0}
+                    </span>
+                  </div>
+                </div>
+              </a>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Metric Cards - Post stats only */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-6">
+        {[
+          { key: 'total', label: 'TOTAL POSTS', icon: FileText, accent: 'from-primary to-accent-pink', iconBg: 'bg-primary/10', iconColor: 'text-primary' },
+          { key: 'draft', label: 'RASCUNHOS', icon: Edit3, accent: 'from-status-draft to-status-draft', iconBg: 'bg-gray-100', iconColor: 'text-status-draft' },
+          { key: 'scheduled', label: 'AGENDADOS', icon: Clock, accent: 'from-status-scheduled to-status-scheduled', iconBg: 'bg-blue-50', iconColor: 'text-status-scheduled' },
+          { key: 'published', label: 'PUBLICADOS', icon: CheckCircle, accent: 'from-status-published to-status-published', iconBg: 'bg-emerald-50', iconColor: 'text-status-published' },
+          { key: 'failed', label: 'FALHAS', icon: AlertCircle, accent: 'from-status-failed to-status-failed', iconBg: 'bg-red-50', iconColor: 'text-status-failed' },
+        ].map((card) => {
           const Icon = card.icon;
           const value = stats[card.key as keyof Stats];
           return (
             <div key={card.key} className="card p-5 relative overflow-hidden group hover:-translate-y-0.5">
-              {/* Top accent bar */}
               <div className={`absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r ${card.accent}`} />
               <div className={`w-10 h-10 rounded-xl ${card.iconBg} flex items-center justify-center mb-3`}>
                 <Icon className={`w-5 h-5 ${card.iconColor}`} strokeWidth={1.5} />
@@ -307,27 +261,10 @@ export default function Dashboard() {
             </div>
           );
         })}
-        {/* Instagram engagement cards */}
-        <div className="card p-5 relative overflow-hidden group hover:-translate-y-0.5">
-          <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-[#E1306C] to-[#F77737]" />
-          <div className="w-10 h-10 rounded-xl bg-pink-50 flex items-center justify-center mb-3">
-            <Heart className="w-5 h-5 text-[#E1306C]" strokeWidth={1.5} />
-          </div>
-          <p className="text-card-number text-text-primary">{formatNumber(totalLikes)}</p>
-          <p className="text-card-label text-text-secondary uppercase tracking-wider mt-1">CURTIDAS IG</p>
-        </div>
-        <div className="card p-5 relative overflow-hidden group hover:-translate-y-0.5">
-          <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-[#833AB4] to-[#E1306C]" />
-          <div className="w-10 h-10 rounded-xl bg-purple-50 flex items-center justify-center mb-3">
-            <MessageCircle className="w-5 h-5 text-[#833AB4]" strokeWidth={1.5} />
-          </div>
-          <p className="text-card-number text-text-primary">{formatNumber(totalComments)}</p>
-          <p className="text-card-label text-text-secondary uppercase tracking-wider mt-1">COMENTARIOS IG</p>
-        </div>
       </div>
 
       {/* Content Sections */}
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 mb-8">
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 mb-6">
         {/* Upcoming Scheduled */}
         <div className="lg:col-span-3 card p-6">
           <div className="flex items-center justify-between mb-5">
@@ -417,43 +354,40 @@ export default function Dashboard() {
       </div>
 
       {/* Quick Actions */}
-      <div>
-        <h2 className="text-section-title text-text-primary mb-4">Acoes Rapidas</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <Link href="/posts/new" className="card p-5 border border-border hover:border-primary hover:-translate-y-0.5 group cursor-pointer">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-gradient-to-br from-primary/10 to-accent-pink/10 group-hover:from-primary/20 group-hover:to-accent-pink/20 transition-colors">
-                <Plus className="w-5 h-5 text-primary" strokeWidth={1.5} />
-              </div>
-              <div>
-                <p className="text-[15px] font-bold text-text-primary">Criar Post</p>
-                <p className="text-[13px] text-text-secondary">Gerar imagem e legenda com IA</p>
-              </div>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <Link href="/posts/new" className="card p-5 border border-border hover:border-primary hover:-translate-y-0.5 group cursor-pointer">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-gradient-to-br from-primary/10 to-accent-pink/10 group-hover:from-primary/20 group-hover:to-accent-pink/20 transition-colors">
+              <Plus className="w-5 h-5 text-primary" strokeWidth={1.5} />
             </div>
-          </Link>
-          <Link href="/calendar" className="card p-5 border border-border hover:border-primary hover:-translate-y-0.5 group cursor-pointer">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-blue-50 group-hover:bg-blue-100 transition-colors">
-                <Calendar className="w-5 h-5 text-status-scheduled" strokeWidth={1.5} />
-              </div>
-              <div>
-                <p className="text-[15px] font-bold text-text-primary">Calendario</p>
-                <p className="text-[13px] text-text-secondary">Ver agenda de publicacoes</p>
-              </div>
+            <div>
+              <p className="text-[15px] font-bold text-text-primary">Criar Post</p>
+              <p className="text-[13px] text-text-secondary">Gerar imagem e legenda com IA</p>
             </div>
-          </Link>
-          <Link href="/settings" className="card p-5 border border-border hover:border-primary hover:-translate-y-0.5 group cursor-pointer">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-gray-100 group-hover:bg-gray-200 transition-colors">
-                <Settings className="w-5 h-5 text-text-secondary" strokeWidth={1.5} />
-              </div>
-              <div>
-                <p className="text-[15px] font-bold text-text-primary">Configuracoes</p>
-                <p className="text-[13px] text-text-secondary">Instagram, Bot e API</p>
-              </div>
+          </div>
+        </Link>
+        <Link href="/calendar" className="card p-5 border border-border hover:border-primary hover:-translate-y-0.5 group cursor-pointer">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-blue-50 group-hover:bg-blue-100 transition-colors">
+              <Calendar className="w-5 h-5 text-status-scheduled" strokeWidth={1.5} />
             </div>
-          </Link>
-        </div>
+            <div>
+              <p className="text-[15px] font-bold text-text-primary">Calendario</p>
+              <p className="text-[13px] text-text-secondary">Ver agenda de publicacoes</p>
+            </div>
+          </div>
+        </Link>
+        <Link href="/settings" className="card p-5 border border-border hover:border-primary hover:-translate-y-0.5 group cursor-pointer">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-gray-100 group-hover:bg-gray-200 transition-colors">
+              <Settings className="w-5 h-5 text-text-secondary" strokeWidth={1.5} />
+            </div>
+            <div>
+              <p className="text-[15px] font-bold text-text-primary">Configuracoes</p>
+              <p className="text-[13px] text-text-secondary">Instagram, Bot e API</p>
+            </div>
+          </div>
+        </Link>
       </div>
     </div>
   );
