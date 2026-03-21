@@ -159,132 +159,6 @@ export default function Dashboard() {
         </Link>
       </div>
 
-      {/* Metric Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-4 mb-8">
-        {METRIC_CARDS.map((card) => {
-          const Icon = card.icon;
-          const value = stats[card.key as keyof Stats];
-          return (
-            <div key={card.key} className="card p-5 relative overflow-hidden group hover:-translate-y-0.5">
-              {/* Top accent bar */}
-              <div className={`absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r ${card.accent}`} />
-              <div className={`w-10 h-10 rounded-xl ${card.iconBg} flex items-center justify-center mb-3`}>
-                <Icon className={`w-5 h-5 ${card.iconColor}`} strokeWidth={1.5} />
-              </div>
-              <p className="text-card-number text-text-primary">{value}</p>
-              <p className="text-card-label text-text-secondary uppercase tracking-wider mt-1">{card.label}</p>
-            </div>
-          );
-        })}
-        {/* Instagram engagement cards */}
-        <div className="card p-5 relative overflow-hidden group hover:-translate-y-0.5">
-          <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-[#E1306C] to-[#F77737]" />
-          <div className="w-10 h-10 rounded-xl bg-pink-50 flex items-center justify-center mb-3">
-            <Heart className="w-5 h-5 text-[#E1306C]" strokeWidth={1.5} />
-          </div>
-          <p className="text-card-number text-text-primary">{formatNumber(totalLikes)}</p>
-          <p className="text-card-label text-text-secondary uppercase tracking-wider mt-1">CURTIDAS IG</p>
-        </div>
-        <div className="card p-5 relative overflow-hidden group hover:-translate-y-0.5">
-          <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-[#833AB4] to-[#E1306C]" />
-          <div className="w-10 h-10 rounded-xl bg-purple-50 flex items-center justify-center mb-3">
-            <MessageCircle className="w-5 h-5 text-[#833AB4]" strokeWidth={1.5} />
-          </div>
-          <p className="text-card-number text-text-primary">{formatNumber(totalComments)}</p>
-          <p className="text-card-label text-text-secondary uppercase tracking-wider mt-1">COMENTARIOS IG</p>
-        </div>
-      </div>
-
-      {/* Content Sections */}
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 mb-8">
-        {/* Upcoming Scheduled */}
-        <div className="lg:col-span-3 card p-6">
-          <div className="flex items-center justify-between mb-5">
-            <div className="flex items-center gap-2.5">
-              <div className="w-7 h-7 rounded-lg bg-blue-50 flex items-center justify-center">
-                <Clock className="w-4 h-4 text-status-scheduled" strokeWidth={1.5} />
-              </div>
-              <h2 className="text-section-title text-text-primary">Proximos Agendados</h2>
-            </div>
-            <Link href="/calendar" className="text-[13px] text-primary hover:text-primary-dark font-medium hover:underline transition-colors">
-              Ver calendario
-            </Link>
-          </div>
-          {upcomingPosts.length === 0 ? (
-            <div className="text-center py-10">
-              <Clock className="w-12 h-12 text-text-muted mx-auto mb-3" strokeWidth={1} />
-              <p className="text-sm text-text-muted">Nenhum post agendado</p>
-              <Link href="/posts/new" className="text-xs text-primary hover:underline mt-2 inline-block font-medium">
-                Agendar um post
-              </Link>
-            </div>
-          ) : (
-            <div className="divide-y divide-[#F0EFEC]">
-              {upcomingPosts.map((post) => (
-                <div key={post.id} className="flex items-center gap-3 py-3 px-1 hover:bg-bg-card-hover rounded-lg transition-colors -mx-1">
-                  {post.imageUrl ? (
-                    <img src={post.imageUrl} alt="" className="w-12 h-12 rounded-thumb object-cover flex-shrink-0" />
-                  ) : (
-                    <div className="w-12 h-12 rounded-thumb bg-bg-main flex items-center justify-center flex-shrink-0">
-                      <FileText className="w-5 h-5 text-text-muted" strokeWidth={1.5} />
-                    </div>
-                  )}
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm text-text-primary truncate">{post.caption || 'Sem legenda'}</p>
-                    <p className="text-xs text-text-secondary mt-0.5">
-                      {post.scheduledAt ? new Date(post.scheduledAt).toLocaleString('pt-BR') : 'Sem data'}
-                    </p>
-                  </div>
-                  <span className="badge badge-scheduled">SCHEDULED</span>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Recent Published */}
-        <div className="lg:col-span-2 card p-6">
-          <div className="flex items-center justify-between mb-5">
-            <div className="flex items-center gap-2.5">
-              <div className="w-7 h-7 rounded-lg bg-emerald-50 flex items-center justify-center">
-                <CheckCircle className="w-4 h-4 text-status-published" strokeWidth={1.5} />
-              </div>
-              <h2 className="text-section-title text-text-primary">Publicados Recentes</h2>
-            </div>
-            <Link href="/posts" className="text-[13px] text-primary hover:text-primary-dark font-medium hover:underline transition-colors">
-              Ver todos
-            </Link>
-          </div>
-          {recentPosts.length === 0 ? (
-            <div className="text-center py-10">
-              <CheckCircle className="w-12 h-12 text-text-muted mx-auto mb-3" strokeWidth={1} />
-              <p className="text-sm text-text-muted">Nenhum post publicado ainda</p>
-            </div>
-          ) : (
-            <div className="divide-y divide-[#F0EFEC]">
-              {recentPosts.map((post) => (
-                <div key={post.id} className="flex items-center gap-3 py-3 px-1 hover:bg-bg-card-hover rounded-lg transition-colors -mx-1">
-                  {post.imageUrl ? (
-                    <img src={post.imageUrl} alt="" className="w-12 h-12 rounded-thumb object-cover flex-shrink-0" />
-                  ) : (
-                    <div className="w-12 h-12 rounded-thumb bg-bg-main flex items-center justify-center flex-shrink-0">
-                      <FileText className="w-5 h-5 text-text-muted" strokeWidth={1.5} />
-                    </div>
-                  )}
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm text-text-primary truncate">{post.caption || 'Sem legenda'}</p>
-                    <p className="text-xs text-text-secondary mt-0.5">
-                      {new Date(post.createdAt).toLocaleDateString('pt-BR')}
-                    </p>
-                  </div>
-                  <span className="badge badge-published">PUBLISHED</span>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-
       {/* Instagram Account Card */}
       {igProfile && (
         <div className="card p-6 mb-8 relative overflow-hidden">
@@ -415,6 +289,132 @@ export default function Dashboard() {
           )}
         </div>
       )}
+
+      {/* Metric Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-4 mb-8">
+        {METRIC_CARDS.map((card) => {
+          const Icon = card.icon;
+          const value = stats[card.key as keyof Stats];
+          return (
+            <div key={card.key} className="card p-5 relative overflow-hidden group hover:-translate-y-0.5">
+              {/* Top accent bar */}
+              <div className={`absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r ${card.accent}`} />
+              <div className={`w-10 h-10 rounded-xl ${card.iconBg} flex items-center justify-center mb-3`}>
+                <Icon className={`w-5 h-5 ${card.iconColor}`} strokeWidth={1.5} />
+              </div>
+              <p className="text-card-number text-text-primary">{value}</p>
+              <p className="text-card-label text-text-secondary uppercase tracking-wider mt-1">{card.label}</p>
+            </div>
+          );
+        })}
+        {/* Instagram engagement cards */}
+        <div className="card p-5 relative overflow-hidden group hover:-translate-y-0.5">
+          <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-[#E1306C] to-[#F77737]" />
+          <div className="w-10 h-10 rounded-xl bg-pink-50 flex items-center justify-center mb-3">
+            <Heart className="w-5 h-5 text-[#E1306C]" strokeWidth={1.5} />
+          </div>
+          <p className="text-card-number text-text-primary">{formatNumber(totalLikes)}</p>
+          <p className="text-card-label text-text-secondary uppercase tracking-wider mt-1">CURTIDAS IG</p>
+        </div>
+        <div className="card p-5 relative overflow-hidden group hover:-translate-y-0.5">
+          <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-[#833AB4] to-[#E1306C]" />
+          <div className="w-10 h-10 rounded-xl bg-purple-50 flex items-center justify-center mb-3">
+            <MessageCircle className="w-5 h-5 text-[#833AB4]" strokeWidth={1.5} />
+          </div>
+          <p className="text-card-number text-text-primary">{formatNumber(totalComments)}</p>
+          <p className="text-card-label text-text-secondary uppercase tracking-wider mt-1">COMENTARIOS IG</p>
+        </div>
+      </div>
+
+      {/* Content Sections */}
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 mb-8">
+        {/* Upcoming Scheduled */}
+        <div className="lg:col-span-3 card p-6">
+          <div className="flex items-center justify-between mb-5">
+            <div className="flex items-center gap-2.5">
+              <div className="w-7 h-7 rounded-lg bg-blue-50 flex items-center justify-center">
+                <Clock className="w-4 h-4 text-status-scheduled" strokeWidth={1.5} />
+              </div>
+              <h2 className="text-section-title text-text-primary">Proximos Agendados</h2>
+            </div>
+            <Link href="/calendar" className="text-[13px] text-primary hover:text-primary-dark font-medium hover:underline transition-colors">
+              Ver calendario
+            </Link>
+          </div>
+          {upcomingPosts.length === 0 ? (
+            <div className="text-center py-10">
+              <Clock className="w-12 h-12 text-text-muted mx-auto mb-3" strokeWidth={1} />
+              <p className="text-sm text-text-muted">Nenhum post agendado</p>
+              <Link href="/posts/new" className="text-xs text-primary hover:underline mt-2 inline-block font-medium">
+                Agendar um post
+              </Link>
+            </div>
+          ) : (
+            <div className="divide-y divide-[#F0EFEC]">
+              {upcomingPosts.map((post) => (
+                <div key={post.id} className="flex items-center gap-3 py-3 px-1 hover:bg-bg-card-hover rounded-lg transition-colors -mx-1">
+                  {post.imageUrl ? (
+                    <img src={post.imageUrl} alt="" className="w-12 h-12 rounded-thumb object-cover flex-shrink-0" />
+                  ) : (
+                    <div className="w-12 h-12 rounded-thumb bg-bg-main flex items-center justify-center flex-shrink-0">
+                      <FileText className="w-5 h-5 text-text-muted" strokeWidth={1.5} />
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-text-primary truncate">{post.caption || 'Sem legenda'}</p>
+                    <p className="text-xs text-text-secondary mt-0.5">
+                      {post.scheduledAt ? new Date(post.scheduledAt).toLocaleString('pt-BR') : 'Sem data'}
+                    </p>
+                  </div>
+                  <span className="badge badge-scheduled">SCHEDULED</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Recent Published */}
+        <div className="lg:col-span-2 card p-6">
+          <div className="flex items-center justify-between mb-5">
+            <div className="flex items-center gap-2.5">
+              <div className="w-7 h-7 rounded-lg bg-emerald-50 flex items-center justify-center">
+                <CheckCircle className="w-4 h-4 text-status-published" strokeWidth={1.5} />
+              </div>
+              <h2 className="text-section-title text-text-primary">Publicados Recentes</h2>
+            </div>
+            <Link href="/posts" className="text-[13px] text-primary hover:text-primary-dark font-medium hover:underline transition-colors">
+              Ver todos
+            </Link>
+          </div>
+          {recentPosts.length === 0 ? (
+            <div className="text-center py-10">
+              <CheckCircle className="w-12 h-12 text-text-muted mx-auto mb-3" strokeWidth={1} />
+              <p className="text-sm text-text-muted">Nenhum post publicado ainda</p>
+            </div>
+          ) : (
+            <div className="divide-y divide-[#F0EFEC]">
+              {recentPosts.map((post) => (
+                <div key={post.id} className="flex items-center gap-3 py-3 px-1 hover:bg-bg-card-hover rounded-lg transition-colors -mx-1">
+                  {post.imageUrl ? (
+                    <img src={post.imageUrl} alt="" className="w-12 h-12 rounded-thumb object-cover flex-shrink-0" />
+                  ) : (
+                    <div className="w-12 h-12 rounded-thumb bg-bg-main flex items-center justify-center flex-shrink-0">
+                      <FileText className="w-5 h-5 text-text-muted" strokeWidth={1.5} />
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-text-primary truncate">{post.caption || 'Sem legenda'}</p>
+                    <p className="text-xs text-text-secondary mt-0.5">
+                      {new Date(post.createdAt).toLocaleDateString('pt-BR')}
+                    </p>
+                  </div>
+                  <span className="badge badge-published">PUBLISHED</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
 
       {/* Quick Actions */}
       <div>
