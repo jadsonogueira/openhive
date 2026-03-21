@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { api } from '../../../lib/api';
-import { ArrowLeft, Plus, Trash2, Save, ExternalLink, CheckSquare, Square, Loader2, FolderKanban } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Save, ExternalLink, CheckSquare, Square, Loader2, FolderKanban, ChevronDown, ChevronUp } from 'lucide-react';
 
 const STATUSES = [
   { value: 'PLANNING', label: 'Planejamento', color: 'bg-amber-50 text-amber-600 border-amber-200' },
@@ -24,6 +24,16 @@ export default function ProjectDetail() {
   const [addingModule, setAddingModule] = useState(false);
   const [driveLinkEditing, setDriveLinkEditing] = useState<string | null>(null);
   const [driveLinkValue, setDriveLinkValue] = useState('');
+  const [expandedModules, setExpandedModules] = useState<Set<string>>(new Set());
+
+  function toggleExpand(moduleId: string) {
+    setExpandedModules((prev) => {
+      const next = new Set(prev);
+      if (next.has(moduleId)) next.delete(moduleId);
+      else next.add(moduleId);
+      return next;
+    });
+  }
 
   async function loadProject() {
     try {
@@ -198,15 +208,25 @@ export default function ProjectDetail() {
                         )}
                       </button>
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-bold text-text-muted">{idx + 1}.</span>
-                          <p className={`text-sm font-medium ${mod.isRecorded ? 'text-status-published line-through' : 'text-text-primary'}`}>
-                            {mod.title}
-                          </p>
-                        </div>
-                        {mod.content && (
-                          <p className="text-xs text-text-secondary mt-1 line-clamp-2">{mod.content}</p>
-                        )}
+                        <button
+                          onClick={() => toggleExpand(mod.id)}
+                          className="w-full text-left group"
+                        >
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-bold text-text-muted">{idx + 1}.</span>
+                            <p className={`text-sm font-medium flex-1 ${mod.isRecorded ? 'text-status-published line-through' : 'text-text-primary'}`}>
+                              {mod.title}
+                            </p>
+                            {mod.content && (
+                              expandedModules.has(mod.id)
+                                ? <ChevronUp className="w-4 h-4 text-text-muted flex-shrink-0" strokeWidth={1.5} />
+                                : <ChevronDown className="w-4 h-4 text-text-muted flex-shrink-0 group-hover:text-primary transition-colors" strokeWidth={1.5} />
+                            )}
+                          </div>
+                          {mod.content && (
+                            <p className={`text-xs text-text-secondary mt-1.5 whitespace-pre-wrap ${expandedModules.has(mod.id) ? '' : 'line-clamp-2'}`}>{mod.content}</p>
+                          )}
+                        </button>
                         {/* Drive link */}
                         <div className="mt-2 flex items-center gap-2">
                           {driveLinkEditing === mod.id ? (
