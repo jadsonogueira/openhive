@@ -9,6 +9,8 @@ import generateRoutes from './routes/generate.routes';
 import uploadRoutes from './routes/upload.routes';
 import taskRoutes from './routes/task.routes';
 import projectRoutes from './routes/project.routes';
+import teamRoutes from './routes/team.routes';
+import funnelRoutes from './routes/funnel.routes';
 import { publishWorker } from './jobs/publish.worker';
 import { tokenRefreshWorker, initTokenRefreshJob } from './jobs/token-refresh.worker';
 import { taskReminderWorker } from './jobs/task-reminder.worker';
@@ -26,6 +28,8 @@ app.use('/api/generate', generateRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/tasks', taskRoutes);
 app.use('/api/projects', projectRoutes);
+app.use('/api/team', teamRoutes);
+app.use('/api/funnels', funnelRoutes);
 
 // Health check with env diagnostics
 app.get('/api/health', (_req, res) => {

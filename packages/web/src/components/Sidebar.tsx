@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, PlusSquare, FileText, Calendar, CheckSquare, FolderKanban, Settings, LogOut, Zap } from 'lucide-react';
+import { Home, PlusSquare, FileText, Calendar, CheckSquare, FolderKanban, Settings, LogOut, Zap, Users, GitBranch } from 'lucide-react';
 import { useAuth } from './AuthProvider';
 
 const links = [
@@ -12,6 +12,8 @@ const links = [
   { href: '/calendar', label: 'Calendario', icon: Calendar },
   { href: '/tasks', label: 'Tarefas', icon: CheckSquare },
   { href: '/projects', label: 'Projetos', icon: FolderKanban },
+  { href: '/funnels', label: 'Funis', icon: GitBranch },
+  { href: '/team', label: 'Equipe', icon: Users },
   { href: '/settings', label: 'Configuracoes', icon: Settings },
 ];
 

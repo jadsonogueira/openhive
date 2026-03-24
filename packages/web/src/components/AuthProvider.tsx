@@ -27,8 +27,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const t = getToken();
     if (t) {
+      // Try to restore user info from localStorage
+      const savedUser = localStorage.getItem('user');
       api.listPosts({ limit: '1' })
-        .then(() => setUser({ loggedIn: true }))
+        .then(() => setUser(savedUser ? JSON.parse(savedUser) : { loggedIn: true }))
         .catch(() => {
           setToken(null);
           setUser(null);
@@ -43,17 +45,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const result = await api.login(email, password);
     setToken(result.token);
     setUser(result.user);
+    localStorage.setItem('user', JSON.stringify(result.user));
   };
 
   const register = async (email: string, password: string, name: string) => {
     const result = await api.register(email, password, name);
     setToken(result.token);
     setUser(result.user);
+    localStorage.setItem('user', JSON.stringify(result.user));
   };
 
   const logout = () => {
     setToken(null);
     setUser(null);
+    localStorage.removeItem('user');
   };
 
   if (loading) {

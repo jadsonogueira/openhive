@@ -1,21 +1,15 @@
 import { Response } from 'express';
 import { prisma } from '../config/database';
 import { AuthRequest } from '../middleware/auth.middleware';
+import { resolveOwnerId } from '../helpers/resolveOwnerId';
 
 function paramId(req: AuthRequest): string {
   return req.params.id as string;
 }
 
-async function resolveUserId(reqUserId: string): Promise<string> {
-  if (reqUserId !== 'service') return reqUserId;
-  const firstUser = await prisma.user.findFirst({ orderBy: { createdAt: 'asc' } });
-  if (!firstUser) throw new Error('No users found - register at least one user first');
-  return firstUser.id;
-}
-
 export async function createProject(req: AuthRequest, res: Response) {
   try {
-    const userId = await resolveUserId(req.userId!);
+    const userId = await resolveOwnerId(req.userId!);
     const { modules, ...projectData } = req.body;
 
     const project = await prisma.project.create({
@@ -42,7 +36,7 @@ export async function createProject(req: AuthRequest, res: Response) {
 
 export async function listProjects(req: AuthRequest, res: Response) {
   try {
-    const userId = await resolveUserId(req.userId!);
+    const userId = await resolveOwnerId(req.userId!);
     const status = req.query.status as string | undefined;
     const page = Number(req.query.page) || 1;
     const take = Number(req.query.limit) || 20;
@@ -74,7 +68,7 @@ export async function listProjects(req: AuthRequest, res: Response) {
 export async function getProject(req: AuthRequest, res: Response) {
   try {
     const id = paramId(req);
-    const userId = await resolveUserId(req.userId!);
+    const userId = await resolveOwnerId(req.userId!);
     const project = await prisma.project.findFirst({
       where: { id, userId },
       include: {
@@ -92,7 +86,7 @@ export async function getProject(req: AuthRequest, res: Response) {
 export async function updateProject(req: AuthRequest, res: Response) {
   try {
     const id = paramId(req);
-    const userId = await resolveUserId(req.userId!);
+    const userId = await resolveOwnerId(req.userId!);
     const result = await prisma.project.updateMany({ where: { id, userId }, data: req.body });
     if (result.count === 0) { res.status(404).json({ success: false, error: 'Project not found' }); return; }
     const updated = await prisma.project.findUnique({
@@ -108,7 +102,7 @@ export async function updateProject(req: AuthRequest, res: Response) {
 export async function deleteProject(req: AuthRequest, res: Response) {
   try {
     const id = paramId(req);
-    const userId = await resolveUserId(req.userId!);
+    const userId = await resolveOwnerId(req.userId!);
     const result = await prisma.project.deleteMany({ where: { id, userId } });
     if (result.count === 0) { res.status(404).json({ success: false, error: 'Project not found' }); return; }
     res.json({ success: true, data: { deleted: true } });
@@ -120,7 +114,7 @@ export async function deleteProject(req: AuthRequest, res: Response) {
 export async function addModule(req: AuthRequest, res: Response) {
   try {
     const projectId = paramId(req);
-    const userId = await resolveUserId(req.userId!);
+    const userId = await resolveOwnerId(req.userId!);
     const project = await prisma.project.findFirst({ where: { id: projectId, userId } });
     if (!project) { res.status(404).json({ success: false, error: 'Project not found' }); return; }
 
@@ -145,7 +139,7 @@ export async function updateModule(req: AuthRequest, res: Response) {
   try {
     const projectId = paramId(req);
     const moduleId = req.params.moduleId as string;
-    const userId = await resolveUserId(req.userId!);
+    const userId = await resolveOwnerId(req.userId!);
 
     const project = await prisma.project.findFirst({ where: { id: projectId, userId } });
     if (!project) { res.status(404).json({ success: false, error: 'Project not found' }); return; }
@@ -164,7 +158,7 @@ export async function deleteModule(req: AuthRequest, res: Response) {
   try {
     const projectId = paramId(req);
     const moduleId = req.params.moduleId as string;
-    const userId = await resolveUserId(req.userId!);
+    const userId = await resolveOwnerId(req.userId!);
 
     const project = await prisma.project.findFirst({ where: { id: projectId, userId } });
     if (!project) { res.status(404).json({ success: false, error: 'Project not found' }); return; }
@@ -182,7 +176,7 @@ export async function deleteModule(req: AuthRequest, res: Response) {
 export async function reorderModules(req: AuthRequest, res: Response) {
   try {
     const projectId = paramId(req);
-    const userId = await resolveUserId(req.userId!);
+    const userId = await resolveOwnerId(req.userId!);
 
     const project = await prisma.project.findFirst({ where: { id: projectId, userId } });
     if (!project) { res.status(404).json({ success: false, error: 'Project not found' }); return; }

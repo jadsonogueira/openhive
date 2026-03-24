@@ -173,4 +173,41 @@ export const api = {
         comments_count: number;
       }>;
     }>('/api/instagram/profile'),
+
+  // Team
+  listMembers: () => request<any[]>('/api/team/members'),
+  listInvitations: () => request<any[]>('/api/team/invitations'),
+  createInvitation: (email: string, role?: string) =>
+    request('/api/team/invite', { method: 'POST', body: JSON.stringify({ email, role }) }),
+  deleteInvitation: (id: string) => request(`/api/team/invitations/${id}`, { method: 'DELETE' }),
+  updateMemberRole: (id: string, role: string) =>
+    request(`/api/team/members/${id}/role`, { method: 'PUT', body: JSON.stringify({ role }) }),
+  removeMember: (id: string) => request(`/api/team/members/${id}`, { method: 'DELETE' }),
+  getInvitationByToken: (token: string) => request<any>(`/api/team/invite/${token}`),
+  acceptInvitation: (token: string, name: string, password: string) =>
+    request<{ user: any; token: string }>('/api/team/accept', {
+      method: 'POST',
+      body: JSON.stringify({ token, name, password }),
+    }),
+
+  // Funnels
+  listFunnels: () => request<any[]>('/api/funnels'),
+  getFunnel: (id: string) => request<any>(`/api/funnels/${id}`),
+  createFunnel: (body: Record<string, unknown>) =>
+    request('/api/funnels', { method: 'POST', body: JSON.stringify(body) }),
+  updateFunnel: (id: string, body: Record<string, unknown>) =>
+    request(`/api/funnels/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
+  deleteFunnel: (id: string) => request(`/api/funnels/${id}`, { method: 'DELETE' }),
+  addStage: (funnelId: string, body: Record<string, unknown>) =>
+    request(`/api/funnels/${funnelId}/stages`, { method: 'POST', body: JSON.stringify(body) }),
+  updateStage: (funnelId: string, stageId: string, body: Record<string, unknown>) =>
+    request(`/api/funnels/${funnelId}/stages/${stageId}`, { method: 'PUT', body: JSON.stringify(body) }),
+  deleteStage: (funnelId: string, stageId: string) =>
+    request(`/api/funnels/${funnelId}/stages/${stageId}`, { method: 'DELETE' }),
+  addStep: (funnelId: string, stageId: string, body: Record<string, unknown>) =>
+    request(`/api/funnels/${funnelId}/stages/${stageId}/steps`, { method: 'POST', body: JSON.stringify(body) }),
+  updateStep: (funnelId: string, stageId: string, stepId: string, body: Record<string, unknown>) =>
+    request(`/api/funnels/${funnelId}/stages/${stageId}/steps/${stepId}`, { method: 'PUT', body: JSON.stringify(body) }),
+  deleteStep: (funnelId: string, stageId: string, stepId: string) =>
+    request(`/api/funnels/${funnelId}/stages/${stageId}/steps/${stepId}`, { method: 'DELETE' }),
 };

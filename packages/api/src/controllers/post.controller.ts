@@ -2,21 +2,15 @@ import { Response } from 'express';
 import { prisma } from '../config/database';
 import { AuthRequest } from '../middleware/auth.middleware';
 import { schedulePost, cancelScheduledPost, publishQueue } from '../services/scheduler.service';
+import { resolveOwnerId } from '../helpers/resolveOwnerId';
 
 function paramId(req: AuthRequest): string {
   return req.params.id as string;
 }
 
-async function resolveUserId(reqUserId: string): Promise<string> {
-  if (reqUserId !== 'service') return reqUserId;
-  const firstUser = await prisma.user.findFirst({ orderBy: { createdAt: 'asc' } });
-  if (!firstUser) throw new Error('No users found - register at least one user first');
-  return firstUser.id;
-}
-
 export async function createPost(req: AuthRequest, res: Response) {
   try {
-    const userId = await resolveUserId(req.userId!);
+    const userId = await resolveOwnerId(req.userId!);
     const { images, ...postData } = req.body;
 
     const isCarousel = !!(images && images.length >= 2);
@@ -53,7 +47,7 @@ export async function listPosts(req: AuthRequest, res: Response) {
     const source = req.query.source as string | undefined;
     const page = Number(req.query.page) || 1;
     const take = Number(req.query.limit) || 20;
-    const userId = await resolveUserId(req.userId!);
+    const userId = await resolveOwnerId(req.userId!);
     const where: Record<string, unknown> = { userId };
     if (status) where.status = status;
     if (source) where.source = source;
@@ -79,7 +73,7 @@ export async function listPosts(req: AuthRequest, res: Response) {
 export async function getPost(req: AuthRequest, res: Response) {
   try {
     const id = paramId(req);
-    const userId = await resolveUserId(req.userId!);
+    const userId = await resolveOwnerId(req.userId!);
     const post = await prisma.post.findFirst({
       where: { id, userId },
       include: { images: { orderBy: { order: 'asc' } } },
@@ -94,7 +88,8 @@ export async function getPost(req: AuthRequest, res: Response) {
 export async function updatePost(req: AuthRequest, res: Response) {
   try {
     const id = paramId(req);
-    const post = await prisma.post.updateMany({ where: { id, userId: req.userId }, data: req.body });
+    const userId = await resolveOwnerId(req.userId!);
+    const post = await prisma.post.updateMany({ where: { id, userId }, data: req.body });
     if (post.count === 0) { res.status(404).json({ success: false, error: 'Post not found' }); return; }
     const updated = await prisma.post.findUnique({ where: { id }, include: { images: { orderBy: { order: 'asc' } } } });
     res.json({ success: true, data: updated });
@@ -106,8 +101,9 @@ export async function updatePost(req: AuthRequest, res: Response) {
 export async function deletePost(req: AuthRequest, res: Response) {
   try {
     const id = paramId(req);
+    const userId = await resolveOwnerId(req.userId!);
     await cancelScheduledPost(id);
-    const result = await prisma.post.deleteMany({ where: { id, userId: req.userId } });
+    const result = await prisma.post.deleteMany({ where: { id, userId } });
     if (result.count === 0) { res.status(404).json({ success: false, error: 'Post not found' }); return; }
     res.json({ success: true, data: { deleted: true } });
   } catch (err) {
@@ -146,7 +142,7 @@ export async function schedulePostController(req: AuthRequest, res: Response) {
 export async function addImageToPost(req: AuthRequest, res: Response) {
   try {
     const postId = paramId(req);
-    const userId = await resolveUserId(req.userId!);
+    const userId = await resolveOwnerId(req.userId!);
     const post = await prisma.post.findFirst({ where: { id: postId, userId } });
     if (!post) { res.status(404).json({ success: false, error: 'Post not found' }); return; }
 
@@ -187,7 +183,7 @@ export async function removeImageFromPost(req: AuthRequest, res: Response) {
   try {
     const postId = paramId(req);
     const imageId = req.params.imageId as string;
-    const userId = await resolveUserId(req.userId!);
+    const userId = await resolveOwnerId(req.userId!);
 
     const post = await prisma.post.findFirst({ where: { id: postId, userId } });
     if (!post) { res.status(404).json({ success: false, error: 'Post not found' }); return; }

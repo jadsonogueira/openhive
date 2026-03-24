@@ -4,6 +4,7 @@ import { env } from '../config/env';
 
 export interface AuthRequest extends Request {
   userId?: string;
+  userRole?: string;
 }
 
 export function authMiddleware(req: AuthRequest, res: Response, next: NextFunction) {

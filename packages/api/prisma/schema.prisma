@@ -7,17 +7,47 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum Role {
+  OWNER
+  ADMIN
+  EDITOR
+  VIEWER
+}
+
 model User {
   id             String          @id @default(uuid())
   email          String          @unique
   password       String
   name           String?
+  role           Role            @default(OWNER)
+  ownerId        String?
+  owner          User?           @relation("TeamMembers", fields: [ownerId], references: [id])
+  members        User[]          @relation("TeamMembers")
   posts          Post[]
   tasks          Task[]
   projects       Project[]
+  funnels        Funnel[]
   instagramToken InstagramToken?
+  invitations    Invitation[]
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
+
+  @@index([ownerId])
+}
+
+model Invitation {
+  id        String    @id @default(uuid())
+  email     String
+  role      Role      @default(EDITOR)
+  token     String    @unique @default(uuid())
+  expiresAt DateTime
+  usedAt    DateTime?
+  ownerId   String
+  owner     User      @relation(fields: [ownerId], references: [id])
+  createdAt DateTime  @default(now())
+
+  @@index([ownerId])
+  @@index([token])
 }
 
 model Post {
@@ -187,4 +217,75 @@ model ProjectModule {
 
   @@index([projectId])
   @@unique([projectId, order])
+}
+
+// === Funnel enums ===
+
+enum FunnelStepType {
+  LANDING_PAGE
+  LEAD_CAPTURE
+  EMAIL_SEQUENCE
+  SALES_PAGE
+  CHECKOUT
+  UPSELL
+  THANK_YOU
+  WEBINAR
+  VIDEO
+  SOCIAL_POST
+  AD
+  OTHER
+}
+
+enum FunnelStepStatus {
+  TODO
+  IN_PROGRESS
+  DONE
+}
+
+// === Funnel models ===
+
+model Funnel {
+  id          String        @id @default(uuid())
+  title       String
+  description String?
+  userId      String
+  user        User          @relation(fields: [userId], references: [id])
+  stages      FunnelStage[]
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@index([userId])
+}
+
+model FunnelStage {
+  id          String       @id @default(uuid())
+  title       String
+  description String?
+  color       String       @default("#6366f1")
+  order       Int          @default(0)
+  funnelId    String
+  funnel      Funnel       @relation(fields: [funnelId], references: [id], onDelete: Cascade)
+  steps       FunnelStep[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@index([funnelId])
+  @@unique([funnelId, order])
+}
+
+model FunnelStep {
+  id          String           @id @default(uuid())
+  title       String
+  description String?
+  type        FunnelStepType   @default(OTHER)
+  link        String?
+  status      FunnelStepStatus @default(TODO)
+  order       Int              @default(0)
+  stageId     String
+  stage       FunnelStage      @relation(fields: [stageId], references: [id], onDelete: Cascade)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  @@index([stageId])
+  @@unique([stageId, order])
 }

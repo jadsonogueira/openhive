@@ -2,21 +2,15 @@ import { Response } from 'express';
 import { prisma } from '../config/database';
 import { AuthRequest } from '../middleware/auth.middleware';
 import { scheduleTaskReminder, cancelTaskReminder } from '../services/task-reminder.service';
+import { resolveOwnerId } from '../helpers/resolveOwnerId';
 
 function paramId(req: AuthRequest): string {
   return req.params.id as string;
 }
 
-async function resolveUserId(reqUserId: string): Promise<string> {
-  if (reqUserId !== 'service') return reqUserId;
-  const firstUser = await prisma.user.findFirst({ orderBy: { createdAt: 'asc' } });
-  if (!firstUser) throw new Error('No users found - register at least one user first');
-  return firstUser.id;
-}
-
 export async function createTask(req: AuthRequest, res: Response) {
   try {
-    const userId = await resolveUserId(req.userId!);
+    const userId = await resolveOwnerId(req.userId!);
     const data = { ...req.body, userId };
     if (data.recordDate) data.recordDate = new Date(data.recordDate);
     if (data.publishDate) data.publishDate = new Date(data.publishDate);
@@ -36,7 +30,7 @@ export async function createTask(req: AuthRequest, res: Response) {
 
 export async function listTasks(req: AuthRequest, res: Response) {
   try {
-    const userId = await resolveUserId(req.userId!);
+    const userId = await resolveOwnerId(req.userId!);
     const status = req.query.status as string | undefined;
     const priority = req.query.priority as string | undefined;
     const platform = req.query.platform as string | undefined;
@@ -78,7 +72,7 @@ export async function listTasks(req: AuthRequest, res: Response) {
 export async function getTask(req: AuthRequest, res: Response) {
   try {
     const id = paramId(req);
-    const userId = await resolveUserId(req.userId!);
+    const userId = await resolveOwnerId(req.userId!);
     const task = await prisma.task.findFirst({
       where: { id, userId },
       include: { project: { select: { id: true, title: true } } },
@@ -93,7 +87,7 @@ export async function getTask(req: AuthRequest, res: Response) {
 export async function updateTask(req: AuthRequest, res: Response) {
   try {
     const id = paramId(req);
-    const userId = await resolveUserId(req.userId!);
+    const userId = await resolveOwnerId(req.userId!);
     const data = { ...req.body };
     if (data.recordDate) data.recordDate = new Date(data.recordDate);
     if (data.publishDate) data.publishDate = new Date(data.publishDate);
@@ -120,7 +114,7 @@ export async function updateTask(req: AuthRequest, res: Response) {
 export async function deleteTask(req: AuthRequest, res: Response) {
   try {
     const id = paramId(req);
-    const userId = await resolveUserId(req.userId!);
+    const userId = await resolveOwnerId(req.userId!);
     try { await cancelTaskReminder(id); } catch { /* non-fatal */ }
     const result = await prisma.task.deleteMany({ where: { id, userId } });
     if (result.count === 0) { res.status(404).json({ success: false, error: 'Task not found' }); return; }
