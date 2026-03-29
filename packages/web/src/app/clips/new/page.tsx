@@ -4,14 +4,11 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { api } from '../../../lib/api';
-import { ArrowLeft, Loader2, Film, Sparkles } from 'lucide-react';
+import { ArrowLeft, Loader2, Film, Sparkles, Youtube } from 'lucide-react';
 
 export default function NewClipPage() {
   const router = useRouter();
   const [url, setUrl] = useState('');
-  const [whisperModel, setWhisperModel] = useState('tiny');
-  const [maxMoments, setMaxMoments] = useState(10);
-  const [language, setLanguage] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -20,12 +17,7 @@ export default function NewClipPage() {
     setLoading(true);
     setError('');
     try {
-      const res: any = await api.analyzeVideo({
-        url: url.trim(),
-        whisperModel,
-        maxMoments,
-        language: language || undefined,
-      });
+      const res: any = await api.analyzeVideo({ url: url.trim() });
       const id = res.data?.id || res.id;
       router.push(`/clips/${id}`);
     } catch (err: any) {
@@ -43,69 +35,25 @@ export default function NewClipPage() {
         <div>
           <h1 className="text-page-title">Novo Clip</h1>
           <p className="text-sm text-text-secondary">
-            Cole a URL de um video do YouTube para analisar
+            Cole a URL de um video do YouTube para extrair os melhores momentos
           </p>
         </div>
       </div>
 
       <div className="card p-6 space-y-5">
-        {/* URL */}
         <div>
           <label className="block text-sm font-semibold text-text-primary mb-1.5">URL do YouTube</label>
-          <input
-            value={url}
-            onChange={(e) => setUrl(e.target.value)}
-            className="input-field"
-            placeholder="https://youtube.com/watch?v=..."
-            onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
-          />
-        </div>
-
-        {/* Whisper Model */}
-        <div>
-          <label className="block text-sm font-semibold text-text-primary mb-1.5">Modelo de Transcricao</label>
-          <select
-            value={whisperModel}
-            onChange={(e) => setWhisperModel(e.target.value)}
-            className="input-field"
-          >
-            <option value="tiny">Tiny - Mais rapido</option>
-            <option value="base">Base - Balanceado</option>
-            <option value="small">Small - Melhor qualidade</option>
-            <option value="medium">Medium - Alta qualidade</option>
-            <option value="large">Large - Maxima qualidade (lento)</option>
-          </select>
-          <p className="text-xs text-text-muted mt-1">
-            Modelos maiores sao mais precisos mas demoram mais
-          </p>
-        </div>
-
-        {/* Max Moments */}
-        <div>
-          <label className="block text-sm font-semibold text-text-primary mb-1.5">Maximo de Momentos</label>
-          <input
-            type="number"
-            value={maxMoments}
-            onChange={(e) => setMaxMoments(parseInt(e.target.value) || 10)}
-            className="input-field"
-            min={1}
-            max={50}
-          />
-        </div>
-
-        {/* Language */}
-        <div>
-          <label className="block text-sm font-semibold text-text-primary mb-1.5">Idioma (opcional)</label>
-          <select
-            value={language}
-            onChange={(e) => setLanguage(e.target.value)}
-            className="input-field"
-          >
-            <option value="">Auto-detectar</option>
-            <option value="pt">Portugues</option>
-            <option value="en">Ingles</option>
-            <option value="es">Espanhol</option>
-          </select>
+          <div className="relative">
+            <Youtube className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-red-500" />
+            <input
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+              className="input-field pl-10"
+              placeholder="https://youtube.com/watch?v=..."
+              autoFocus
+              onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
+            />
+          </div>
         </div>
 
         {error && (
@@ -122,7 +70,7 @@ export default function NewClipPage() {
           {loading ? (
             <>
               <Loader2 className="w-4 h-4 animate-spin" />
-              Enviando para analise...
+              Analisando video...
             </>
           ) : (
             <>
@@ -133,18 +81,30 @@ export default function NewClipPage() {
         </button>
       </div>
 
-      {/* Info */}
+      {/* How it works */}
       <div className="mt-6 card p-5">
-        <h3 className="font-semibold text-sm text-text-primary mb-2 flex items-center gap-2">
+        <h3 className="font-semibold text-sm text-text-primary mb-3 flex items-center gap-2">
           <Film className="w-4 h-4 text-primary" />
           Como funciona
         </h3>
-        <ol className="space-y-2 text-xs text-text-secondary">
-          <li><strong>1.</strong> O video e baixado e transcrito com IA (Whisper)</li>
-          <li><strong>2.</strong> Momentos com maior potencial de engajamento sao identificados</li>
-          <li><strong>3.</strong> Voce escolhe quais momentos quer transformar em clips</li>
-          <li><strong>4.</strong> Cada clip e gerado em formato vertical (1080x1920) com deteccao de rosto e legendas</li>
-        </ol>
+        <div className="grid grid-cols-2 gap-3">
+          <div className="p-3 rounded-lg bg-bg-main">
+            <div className="text-lg font-bold text-primary mb-1">1</div>
+            <p className="text-xs text-text-secondary">A IA baixa e transcreve o video automaticamente</p>
+          </div>
+          <div className="p-3 rounded-lg bg-bg-main">
+            <div className="text-lg font-bold text-primary mb-1">2</div>
+            <p className="text-xs text-text-secondary">Os melhores momentos sao identificados por scoring</p>
+          </div>
+          <div className="p-3 rounded-lg bg-bg-main">
+            <div className="text-lg font-bold text-primary mb-1">3</div>
+            <p className="text-xs text-text-secondary">Voce escolhe quais momentos quer transformar em clips</p>
+          </div>
+          <div className="p-3 rounded-lg bg-bg-main">
+            <div className="text-lg font-bold text-primary mb-1">4</div>
+            <p className="text-xs text-text-secondary">Clips verticais (9:16) com face cam e legendas automaticas</p>
+          </div>
+        </div>
       </div>
     </div>
   );

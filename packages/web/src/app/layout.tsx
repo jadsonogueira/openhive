@@ -3,8 +3,8 @@ import { LayoutContent } from '../components/LayoutContent';
 import { AuthProvider } from '../components/AuthProvider';
 
 export const metadata = {
-  title: 'InstaPost AI',
-  description: 'Plataforma de criacao e agendamento de posts para Instagram',
+  title: 'OpenHive AI',
+  description: 'Plataforma open-source de criacao e gestao de conteudo com IA',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

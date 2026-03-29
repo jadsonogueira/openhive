@@ -6,20 +6,22 @@ const config: Config = {
     extend: {
       colors: {
         // Backgrounds
-        'bg-main': '#F8F7F4',
+        'bg-main': '#FFFBEB',
         'bg-card': '#FFFFFF',
-        'bg-card-hover': '#FAFAF8',
+        'bg-card-hover': '#FEF9E7',
 
-        // Primary (roxo)
+        // Primary (dourado/mel)
         primary: {
-          DEFAULT: '#6C5CE7',
-          light: '#A29BFE',
-          dark: '#5A4BD1',
+          DEFAULT: '#EAB308',
+          light: '#FDE047',
+          dark: '#CA8A04',
         },
 
         // Accent
-        'accent-pink': '#E84393',
-        'accent-orange': '#FDCB6E',
+        'accent-amber': '#F59E0B',
+        'accent-honey': '#D97706',
+        'accent-pink': '#F59E0B',
+        'accent-orange': '#D97706',
 
         // Status
         'status-scheduled': '#0984E3',
@@ -28,12 +30,12 @@ const config: Config = {
         'status-failed': '#D63031',
 
         // Text
-        'text-primary': '#2D3436',
-        'text-secondary': '#636E72',
-        'text-muted': '#B2BEC3',
+        'text-primary': '#1C1917',
+        'text-secondary': '#57534E',
+        'text-muted': '#A8A29E',
 
         // Border
-        border: '#E8E6E1',
+        border: '#E7E5E4',
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
@@ -42,8 +44,8 @@ const config: Config = {
         sm: '0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.06)',
         md: '0 4px 12px rgba(0,0,0,0.05), 0 2px 4px rgba(0,0,0,0.04)',
         lg: '0 10px 30px rgba(0,0,0,0.08)',
-        'cta': '0 4px 14px rgba(108, 92, 231, 0.3)',
-        'cta-hover': '0 6px 20px rgba(108, 92, 231, 0.4)',
+        'cta': '0 4px 14px rgba(234, 179, 8, 0.3)',
+        'cta-hover': '0 6px 20px rgba(234, 179, 8, 0.4)',
       },
       borderRadius: {
         'card': '16px',

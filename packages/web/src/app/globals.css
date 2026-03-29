@@ -6,8 +6,8 @@
 
 @layer base {
   body {
-    background-color: #F8F7F4;
-    color: #2D3436;
+    background-color: #FFFBEB;
+    color: #1C1917;
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -24,12 +24,12 @@
   }
 
   ::-webkit-scrollbar-thumb {
-    background-color: #DFE6E9;
+    background-color: #D6D3D1;
     border-radius: 9999px;
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    background-color: #B2BEC3;
+    background-color: #A8A29E;
   }
 
   /* Transitions */
@@ -43,6 +43,7 @@
   .card {
     background: #FFFFFF;
     border-radius: 16px;
+    border: 1px solid #E7E5E4;
     box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.06);
     transition: all 0.2s ease;
   }
@@ -60,14 +61,14 @@
     border-radius: 12px;
     font-size: 0.875rem;
     font-weight: 600;
-    color: white;
-    background: linear-gradient(135deg, #6C5CE7 0%, #E84393 100%);
-    box-shadow: 0 4px 14px rgba(108, 92, 231, 0.3);
+    color: #1C1917;
+    background: linear-gradient(135deg, #FDE047 0%, #F59E0B 100%);
+    box-shadow: 0 4px 14px rgba(234, 179, 8, 0.3);
     transition: all 0.2s ease;
   }
 
   .btn-cta:hover {
-    box-shadow: 0 6px 20px rgba(108, 92, 231, 0.4);
+    box-shadow: 0 6px 20px rgba(234, 179, 8, 0.4);
     transform: scale(1.02);
   }
 
@@ -86,15 +87,15 @@
     border-radius: 12px;
     font-size: 0.875rem;
     font-weight: 500;
-    color: #636E72;
+    color: #57534E;
     background: #FFFFFF;
-    border: 1px solid #E8E6E1;
+    border: 1px solid #E7E5E4;
     transition: all 0.2s ease;
   }
 
   .btn-ghost:hover {
-    border-color: #6C5CE7;
-    color: #6C5CE7;
+    border-color: #EAB308;
+    color: #CA8A04;
     box-shadow: 0 4px 12px rgba(0,0,0,0.05);
   }
 
@@ -107,22 +108,22 @@
   .input-field {
     width: 100%;
     background: #FFFFFF;
-    border: 1px solid #E8E6E1;
+    border: 1px solid #E7E5E4;
     border-radius: 10px;
     padding: 0.625rem 1rem;
     font-size: 0.875rem;
-    color: #2D3436;
+    color: #1C1917;
     transition: all 0.2s ease;
   }
 
   .input-field::placeholder {
-    color: #B2BEC3;
+    color: #A8A29E;
   }
 
   .input-field:focus {
     outline: none;
-    border-color: #6C5CE7;
-    box-shadow: 0 0 0 3px rgba(108, 92, 231, 0.1);
+    border-color: #EAB308;
+    box-shadow: 0 0 0 3px rgba(234, 179, 8, 0.15);
   }
 
   /* Status badges */
@@ -148,8 +149,8 @@
   }
 
   .badge-publishing {
-    background-color: rgba(253, 203, 110, 0.2);
-    color: #E17055;
+    background-color: rgba(234, 179, 8, 0.15);
+    color: #D97706;
   }
 
   .badge-published {
@@ -167,7 +168,7 @@
     display: grid;
     grid-template-columns: repeat(7, minmax(0, 1fr));
     gap: 1px;
-    background-color: #E8E6E1;
+    background-color: #E7E5E4;
   }
 
   .calendar-cell {
@@ -179,20 +180,20 @@
   }
 
   .calendar-cell:hover {
-    background-color: #FAFAF8;
+    background-color: #FEF9E7;
   }
 
   .calendar-cell.outside {
-    background-color: #FAFAF8;
+    background-color: #FEF9E7;
     opacity: 0.5;
   }
 
   .calendar-cell.today {
-    background-color: #FAFAF8;
+    background-color: #FEF9E7;
   }
 
   .calendar-cell.selected {
-    background-color: rgba(108, 92, 231, 0.04);
+    background-color: rgba(234, 179, 8, 0.08);
   }
 
   /* Calendar event chips */
@@ -204,7 +205,7 @@
     border-radius: 6px;
     font-size: 11px;
     font-weight: 600;
-    color: #2D3436;
+    color: #1C1917;
     transition: box-shadow 0.2s ease;
     border: 1px solid transparent;
     white-space: nowrap;
@@ -270,8 +271,8 @@
   }
 
   .badge-high {
-    background-color: rgba(253, 203, 110, 0.3);
-    color: #E17055;
+    background-color: rgba(234, 179, 8, 0.2);
+    color: #D97706;
   }
 
   .badge-urgent {
@@ -281,8 +282,8 @@
 
   /* Project status badges */
   .badge-planning {
-    background-color: rgba(253, 203, 110, 0.2);
-    color: #FDCB6E;
+    background-color: rgba(234, 179, 8, 0.15);
+    color: #CA8A04;
   }
 
   .badge-archived {
