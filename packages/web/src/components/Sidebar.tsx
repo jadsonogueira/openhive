@@ -45,10 +45,10 @@ export function Sidebar() {
       {/* Logo Area */}
       <div className="p-6 flex flex-col items-start gap-1">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-yellow-400 via-amber-500 to-amber-600 flex items-center justify-center text-white shadow-sm">
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary via-accent-pink to-accent-orange flex items-center justify-center text-white shadow-sm">
             <Hexagon className="w-5 h-5" strokeWidth={2.5} fill="currentColor" />
           </div>
-          <span className="font-bold text-[20px] tracking-tight bg-gradient-to-r from-amber-500 to-amber-700 bg-clip-text text-transparent">
+          <span className="font-bold text-[20px] tracking-tight bg-gradient-to-r from-primary to-accent-pink bg-clip-text text-transparent">
             OpenHive
           </span>
         </div>
