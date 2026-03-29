@@ -101,18 +101,37 @@ export default function SettingsPage() {
     setSaving((s) => ({ ...s, [key]: false }));
   }
 
+  const mcpUrl = settings['MCP_URL']?.hasValue ? '' : '';
+
   function getMcpUrl() {
-    if (typeof window === 'undefined') return '';
-    const host = window.location.hostname;
-    const port = 3002;
-    const protocol = window.location.protocol;
-    return `${protocol}//${host}:${port}/mcp`;
+    // Use saved URL if available, otherwise show placeholder
+    const saved = editValues['MCP_URL'] || '';
+    if (saved) return saved;
+    // Check if we have a saved value in settings
+    if (settings['MCP_URL']?.hasValue) return settings['MCP_URL'].value;
+    return '';
   }
 
   function copyMcpUrl() {
-    navigator.clipboard.writeText(getMcpUrl());
-    setMcpCopied(true);
-    setTimeout(() => setMcpCopied(false), 2000);
+    const url = getMcpUrl();
+    if (url) {
+      navigator.clipboard.writeText(url);
+      setMcpCopied(true);
+      setTimeout(() => setMcpCopied(false), 2000);
+    }
+  }
+
+  async function handleSaveMcpUrl() {
+    const url = editValues['MCP_URL'];
+    if (!url) return;
+    setSaving((s) => ({ ...s, MCP_URL: true }));
+    try {
+      await api.updateSetting('MCP_URL', url);
+      setSettings((s) => ({ ...s, MCP_URL: { value: url, hasValue: true } }));
+      setSaved((s) => ({ ...s, MCP_URL: true }));
+      setTimeout(() => setSaved((s) => ({ ...s, MCP_URL: false })), 2000);
+    } catch {}
+    setSaving((s) => ({ ...s, MCP_URL: false }));
   }
 
   if (loading) {
@@ -147,19 +166,34 @@ export default function SettingsPage() {
                 </span>
               </div>
               <p className="text-xs text-text-secondary mb-3">
-                Conecte ao Claude Desktop, Claude Code ou Cowork com esta URL
+                Conecte ao Claude Desktop, Claude Code ou Cowork com a URL abaixo
               </p>
-              <div className="flex items-center gap-2">
-                <code className="flex-1 bg-bg-main rounded-lg px-3 py-2 text-xs font-mono text-text-primary truncate">
-                  {getMcpUrl()}
-                </code>
-                <button
-                  onClick={copyMcpUrl}
-                  className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-primary/10 text-primary text-xs font-semibold hover:bg-primary/20 transition-colors"
-                >
-                  {mcpCopied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                  {mcpCopied ? 'Copiado!' : 'Copiar'}
-                </button>
+              <div className="space-y-2">
+                <label className="block text-[11px] font-semibold text-text-muted">URL do MCP Server</label>
+                <div className="flex items-center gap-2">
+                  <input
+                    value={editValues['MCP_URL'] ?? (settings['MCP_URL']?.hasValue ? settings['MCP_URL'].value : '')}
+                    onChange={(e) => setEditValues((v) => ({ ...v, MCP_URL: e.target.value }))}
+                    className="input-field text-xs font-mono"
+                    placeholder="https://seu-servidor.sslip.io/mcp"
+                  />
+                  <button
+                    onClick={handleSaveMcpUrl}
+                    disabled={!editValues['MCP_URL'] || saving['MCP_URL']}
+                    className="flex items-center gap-1 px-3 py-2 rounded-lg text-xs font-semibold transition-colors disabled:opacity-40 bg-primary/10 text-primary hover:bg-primary/20"
+                  >
+                    {saving['MCP_URL'] ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : saved['MCP_URL'] ? <Check className="w-3.5 h-3.5" /> : <Save className="w-3.5 h-3.5" />}
+                  </button>
+                  {settings['MCP_URL']?.hasValue && (
+                    <button
+                      onClick={copyMcpUrl}
+                      className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-primary/10 text-primary text-xs font-semibold hover:bg-primary/20 transition-colors"
+                    >
+                      {mcpCopied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                      {mcpCopied ? 'Copiado!' : 'Copiar'}
+                    </button>
+                  )}
+                </div>
               </div>
               <p className="text-[11px] text-text-muted mt-2">
                 24 tools disponiveis: posts, tarefas, projetos, modulos, imagens, legendas, clips de video

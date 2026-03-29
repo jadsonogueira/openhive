@@ -15,6 +15,7 @@ const ALLOWED_KEYS = [
   'TELEGRAM_BOT_TOKEN',
   'TELEGRAM_ALLOWED_CHAT_IDS',
   'MCP_AUTH_TOKEN',
+  'MCP_URL',
 ];
 
 router.use(authMiddleware);
@@ -25,10 +26,10 @@ router.get('/', async (req: AuthRequest, res: Response) => {
     const userId = await resolveOwnerId(req.userId!);
     const settings = await prisma.setting.findMany({ where: { userId } });
 
-    // Mask sensitive values (show only last 4 chars)
+    const NON_SECRET_KEYS = ['MCP_URL', 'TELEGRAM_ALLOWED_CHAT_IDS', 'INSTAGRAM_USER_ID'];
     const masked = settings.map((s) => ({
       key: s.key,
-      value: s.value.length > 8 ? '••••••••' + s.value.slice(-4) : '••••',
+      value: NON_SECRET_KEYS.includes(s.key) ? s.value : (s.value.length > 8 ? '••••••••' + s.value.slice(-4) : '••••'),
       hasValue: s.value.length > 0,
     }));
 
