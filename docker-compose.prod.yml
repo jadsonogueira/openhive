@@ -100,3 +100,8 @@ services:
 volumes:
   miniodata:
   shared-data:
+
+networks:
+  default:
+    name: coolify
+    external: true
