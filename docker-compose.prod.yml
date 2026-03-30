@@ -1,33 +1,4 @@
 services:
-  postgres:
-    image: postgres:16-alpine
-    environment:
-      POSTGRES_DB: instapost
-      POSTGRES_USER: instapost
-      POSTGRES_PASSWORD: changeme
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-    restart: unless-stopped
-    healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U instapost']
-      interval: 10s
-      timeout: 5s
-      retries: 10
-      start_period: 30s
-
-  redis:
-    image: redis:7-alpine
-    command: redis-server --requirepass changeme
-    volumes:
-      - redisdata:/data
-    restart: unless-stopped
-    healthcheck:
-      test: ['CMD', 'redis-cli', '-a', 'changeme', 'ping']
-      interval: 10s
-      timeout: 5s
-      retries: 10
-      start_period: 10s
-
   minio:
     image: minio/minio:latest
     command: server /data --console-address ":9001"
@@ -56,19 +27,15 @@ services:
     volumes:
       - shared-data:/app/shared
     depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
       minio:
         condition: service_healthy
     restart: unless-stopped
     healthcheck:
       test: ['CMD', 'wget', '-qO-', 'http://localhost:3001/api/health']
-      interval: 10s
-      timeout: 5s
+      interval: 15s
+      timeout: 10s
       retries: 10
-      start_period: 30s
+      start_period: 60s
 
   web:
     build:
@@ -109,8 +76,6 @@ services:
       context: .
       dockerfile: Dockerfile.video
     environment:
-      REDIS_URL: redis://:changeme@redis:6379
-      DATABASE_URL: postgresql://instapost:changeme@postgres:5432/instapost
       MINIO_ENDPOINT: minio
       MINIO_PORT: '9000'
       MINIO_ACCESS_KEY: minioadmin
@@ -123,16 +88,10 @@ services:
     volumes:
       - shared-data:/app/shared
     depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
       minio:
         condition: service_healthy
     restart: unless-stopped
 
 volumes:
-  pgdata:
-  redisdata:
   miniodata:
   shared-data:
