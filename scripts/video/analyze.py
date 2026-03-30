@@ -47,9 +47,34 @@ def get_ytdlp_args() -> list:
     return args
 
 
+def get_video_duration(video_path: str) -> int:
+    """Get video duration using ffprobe."""
+    try:
+        cmd = ["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "json", video_path]
+        result = subprocess.run(cmd, capture_output=True, text=True)
+        data = json.loads(result.stdout)
+        return int(float(data.get("format", {}).get("duration", 0)))
+    except:
+        return 0
+
+
 def download_video(url: str, output_dir: str) -> dict:
-    """Download video with yt-dlp and return metadata."""
+    """Download video with yt-dlp and return metadata. Skips if video already exists (upload)."""
     video_path = os.path.join(output_dir, "video.mp4")
+
+    # If video already exists (uploaded directly), skip download
+    if os.path.exists(video_path):
+        duration = get_video_duration(video_path)
+        info = {
+            "title": os.path.basename(output_dir),
+            "channel": "Upload",
+            "duration": duration,
+            "views": 0,
+            "url": url,
+            "video_path": video_path,
+        }
+        return info
+
     extra = get_ytdlp_args()
 
     # Get metadata first
@@ -70,18 +95,17 @@ def download_video(url: str, output_dir: str) -> dict:
     }
 
     # Download video
-    if not os.path.exists(video_path):
-        dl_cmd = [
-            "yt-dlp",
-            "-f", "bestvideo[height<=1080]+bestaudio/best[height<=1080]/best",
-            "--merge-output-format", "mp4",
-            *extra,
-            "-o", video_path,
-            url,
-        ]
-        result = subprocess.run(dl_cmd, capture_output=True, text=True)
-        if result.returncode != 0:
-            raise RuntimeError(f"yt-dlp download failed: {result.stderr}")
+    dl_cmd = [
+        "yt-dlp",
+        "-f", "bestvideo[height<=1080]+bestaudio/best[height<=1080]/best",
+        "--merge-output-format", "mp4",
+        *extra,
+        "-o", video_path,
+        url,
+    ]
+    result = subprocess.run(dl_cmd, capture_output=True, text=True)
+    if result.returncode != 0:
+        raise RuntimeError(f"yt-dlp download failed: {result.stderr}")
 
     info["video_path"] = video_path
     return info

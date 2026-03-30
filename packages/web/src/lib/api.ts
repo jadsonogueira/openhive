@@ -230,6 +230,18 @@ export const api = {
     request(`/api/videos/${id}/cut`, { method: 'POST', body: JSON.stringify(body) }),
   deleteVideoClip: (id: string) =>
     request(`/api/videos/${id}`, { method: 'DELETE' }),
+  uploadVideoFile: async (file: File, title?: string) => {
+    const formData = new FormData();
+    formData.append('video', file);
+    if (title) formData.append('title', title);
+    const headers: Record<string, string> = {};
+    const t = getToken();
+    if (t) headers['Authorization'] = `Bearer ${t}`;
+    const res = await fetch(`${BASE_URL}/api/videos/upload`, { method: 'POST', headers, body: formData });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data?.error || 'Upload failed');
+    return data?.data;
+  },
 
   // Settings
   getSettings: () => request<any>('/api/settings'),

@@ -1,6 +1,6 @@
-import { Router } from 'express';
+import { Router, Response } from 'express';
 import { z } from 'zod';
-import { authMiddleware } from '../middleware/auth.middleware';
+import { authMiddleware, AuthRequest } from '../middleware/auth.middleware';
 import { validate } from '../middleware/validate';
 import {
   analyzeVideo,
@@ -9,6 +9,13 @@ import {
   cutClips,
   deleteVideoClip,
 } from '../controllers/video.controller';
+import { prisma } from '../config/database';
+import { resolveOwnerId } from '../helpers/resolveOwnerId';
+import { queueAnalysis } from '../services/video.service';
+import multer from 'multer';
+import * as fs from 'fs';
+import * as path from 'path';
+import * as os from 'os';
 
 const router = Router();
 
@@ -38,5 +45,46 @@ router.get('/', listVideoClips);
 router.get('/:id', getVideoClip);
 router.post('/:id/cut', validate(cutSchema), cutClips);
 router.delete('/:id', deleteVideoClip);
+
+// Upload video file directly (no YouTube needed)
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 500 * 1024 * 1024 } }); // 500MB max
+router.post('/upload', upload.single('video'), async (req: AuthRequest, res: Response) => {
+  try {
+    if (!req.file) {
+      res.status(400).json({ success: false, error: 'No video file uploaded' });
+      return;
+    }
+
+    const userId = await resolveOwnerId(req.userId!);
+    const title = (req.body?.title as string) || req.file.originalname || 'Uploaded video';
+
+    const videoClip = await prisma.videoClip.create({
+      data: { sourceUrl: 'upload://' + req.file.originalname, title, userId },
+    });
+
+    // Save video file to work directory
+    const workDir = path.join(os.tmpdir(), 'instapost-videos', videoClip.id);
+    fs.mkdirSync(workDir, { recursive: true });
+    const videoPath = path.join(workDir, 'video.mp4');
+    fs.writeFileSync(videoPath, req.file.buffer);
+
+    // Update workDir in DB
+    await prisma.videoClip.update({ where: { id: videoClip.id }, data: { workDir } });
+
+    // Queue analysis (will skip download since video.mp4 already exists)
+    await queueAnalysis(videoClip.id, {
+      whisperModel: (req.body?.whisperModel as string) || 'tiny',
+      maxMoments: parseInt(req.body?.maxMoments as string) || 10,
+      language: req.body?.language as string,
+    });
+
+    res.json({
+      success: true,
+      data: { id: videoClip.id, status: 'PENDING', message: 'Video enviado, analise iniciada' },
+    });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err?.message });
+  }
+});
 
 export default router;
