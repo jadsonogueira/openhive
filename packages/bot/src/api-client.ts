@@ -89,4 +89,8 @@ export const api = {
   listVideoClips: () => request<{ items: any[]; total: number }>('/api/videos?limit=10'),
   cutVideoClips: (id: string, clips: any[], format = 'vertical') =>
     request<any>(`/api/videos/${id}/cut`, { method: 'POST', body: JSON.stringify({ clips, format }) }),
+
+  // Template image generation
+  generateTemplate: (body: Record<string, unknown>) =>
+    request<{ imageUrl: string }>('/api/generate/template', { method: 'POST', body: JSON.stringify(body) }),
 };

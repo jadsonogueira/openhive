@@ -117,4 +117,8 @@ export const api = {
 
   cutVideoClips: (id: string, body: Record<string, unknown>) =>
     request(`/api/videos/${id}/cut`, { method: 'POST', body: JSON.stringify(body) }),
+
+  // Template image generation
+  generateTemplate: (body: Record<string, unknown>) =>
+    request<{ imageUrl: string }>('/api/generate/template', { method: 'POST', body: JSON.stringify(body) }),
 };

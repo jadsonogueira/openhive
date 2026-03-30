@@ -23,6 +23,7 @@ import { deleteProject } from './tools/deleteProject';
 import { addModule } from './tools/addModule';
 import { updateModule } from './tools/updateModule';
 import { deleteModule } from './tools/deleteModule';
+import { generateTemplateImage } from './tools/generateTemplateImage';
 import { analyzeYoutubeVideo } from './tools/analyzeYoutubeVideo';
 import { cutYoutubeClips } from './tools/cutYoutubeClips';
 import { listVideoClips } from './tools/listVideoClips';
@@ -362,6 +363,25 @@ function registerTools(server: McpServer) {
     },
     async ({ project_id, module_id }) => {
       const result = await deleteModule({ project_id, module_id });
+      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+    },
+  );
+
+  // ── Template Image ──
+
+  server.tool(
+    'generate_template_image',
+    'Gera imagem de post usando template HTML/CSS (sem precisar de IA). Templates: bold-gradient, minimal-dark, neon-card, quote-elegant, stats-impact, split-color',
+    {
+      title: z.string().describe('Texto principal do post'),
+      subtitle: z.string().optional().describe('Subtitulo ou complemento'),
+      body: z.string().optional().describe('Texto adicional menor'),
+      accent: z.string().optional().describe('Cor accent em hex (default: #6C5CE7)'),
+      template: z.string().optional().describe('Template: bold-gradient, minimal-dark, neon-card, quote-elegant, stats-impact, split-color'),
+      aspect_ratio: z.string().optional().describe('Formato: 1:1 (feed), 4:5 (retrato), 9:16 (stories)'),
+    },
+    async (input) => {
+      const result = await generateTemplateImage(input);
       return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
     },
   );

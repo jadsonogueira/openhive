@@ -237,6 +237,11 @@ export const api = {
     request('/api/settings', { method: 'PUT', body: JSON.stringify({ key, value }) }),
   deleteSetting: (key: string) => request(`/api/settings/${key}`, { method: 'DELETE' }),
 
+  // Template image generation
+  listTemplates: () => request<any[]>('/api/generate/templates'),
+  generateTemplate: (body: { title: string; subtitle?: string; body?: string; accent?: string; template?: string; aspectRatio?: string }) =>
+    request<{ imageUrl: string }>('/api/generate/template', { method: 'POST', body: JSON.stringify(body) }),
+
   // Instagram Accounts
   listInstagramAccounts: () => request<any[]>('/api/instagram/accounts'),
   addInstagramAccount: (body: { accessToken: string; instagramUserId: string; username?: string }) =>

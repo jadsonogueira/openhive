@@ -7,6 +7,7 @@ export async function startCommand(ctx: Context) {
 📝 *Posts*
 /novopost - Criar post interativo
 /gerar [tema] - Gerar imagem + legenda com IA
+/template [nome] [texto] - Gerar imagem com template (sem IA)
 /listar - Listar posts agendados
 /publicar [id] - Publicar imediatamente
 /agendar [id] [YYYY-MM-DD HH:mm] - Agendar post

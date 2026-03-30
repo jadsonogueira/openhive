@@ -13,6 +13,7 @@ import { tarefasCommand } from './commands/tarefas';
 import { projetosCommand } from './commands/projetos';
 import { funisCommand } from './commands/funis';
 import { clipCommand, clipCortarCommand } from './commands/clip';
+import { templateCommand } from './commands/template';
 import { handleCallbackQuery } from './callbacks';
 import { api } from './api-client';
 import { InlineKeyboard } from 'grammy';
@@ -43,6 +44,7 @@ bot.command('projetos', projetosCommand);
 bot.command('funis', funisCommand);
 bot.command('clip', clipCommand);
 bot.command('clipcortar', clipCortarCommand);
+bot.command('template', templateCommand);
 
 // Callback queries (inline buttons)
 bot.on('callback_query:data', handleCallbackQuery);

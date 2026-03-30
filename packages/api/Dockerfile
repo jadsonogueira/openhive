@@ -14,7 +14,9 @@ RUN cd packages/shared && npx tsc && cd /app/packages/api && npx tsc
 
 FROM node:20-alpine
 WORKDIR /app
-RUN apk add --no-cache wget
+RUN apk add --no-cache wget chromium
+ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
+ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
 COPY --from=builder /app/packages/api/dist ./dist
 COPY --from=builder /app/packages/api/package.json ./
 COPY --from=builder /app/packages/api/prisma ./prisma

@@ -1,8 +1,10 @@
-import { Router } from 'express';
+import { Router, Response } from 'express';
 import { z } from 'zod';
-import { authMiddleware } from '../middleware/auth.middleware';
+import { authMiddleware, AuthRequest } from '../middleware/auth.middleware';
 import { validate } from '../middleware/validate';
 import { generateImageController, generateCaptionController } from '../controllers/generate.controller';
+import { renderTemplateToImage } from '../services/template-renderer.service';
+import { TEMPLATES } from '../services/templates';
 
 const router = Router();
 
@@ -24,5 +26,29 @@ router.use(authMiddleware);
 
 router.post('/image', validate(imageSchema), generateImageController);
 router.post('/caption', validate(captionSchema), generateCaptionController);
+
+// Template-based image generation (no AI needed)
+const templateSchema = z.object({
+  title: z.string().min(1),
+  subtitle: z.string().optional(),
+  body: z.string().optional(),
+  accent: z.string().optional(),
+  template: z.string().optional().default('bold-gradient'),
+  aspectRatio: z.enum(['1:1', '9:16', '4:5']).optional(),
+});
+
+router.post('/template', validate(templateSchema), async (req: AuthRequest, res: Response) => {
+  try {
+    const result = await renderTemplateToImage(req.body);
+    res.json({ success: true, data: result });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err?.message || 'Failed to render template' });
+  }
+});
+
+// List available templates
+router.get('/templates', (_req: AuthRequest, res: Response) => {
+  res.json({ success: true, data: TEMPLATES });
+});
 
 export default router;
