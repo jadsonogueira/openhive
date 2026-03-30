@@ -61,7 +61,7 @@ def download_video(url: str, output_dir: str) -> str:
     extra = get_ytdlp_args()
     cmd = [
         "yt-dlp",
-        "-f", "bestvideo[height<=1080]+bestaudio/best[height<=1080]",
+        "-f", "bestvideo[height<=1080]+bestaudio/best[height<=1080]/best",
         "--merge-output-format", "mp4",
         *extra,
         "-o", video_path,

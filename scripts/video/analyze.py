@@ -73,7 +73,7 @@ def download_video(url: str, output_dir: str) -> dict:
     if not os.path.exists(video_path):
         dl_cmd = [
             "yt-dlp",
-            "-f", "bestvideo[height<=1080]+bestaudio/best[height<=1080]",
+            "-f", "bestvideo[height<=1080]+bestaudio/best[height<=1080]/best",
             "--merge-output-format", "mp4",
             *extra,
             "-o", video_path,

@@ -13,7 +13,8 @@ WORKDIR /app
 COPY scripts/video/requirements.txt .
 RUN python3 -m venv /opt/venv && \
     /opt/venv/bin/pip install --no-cache-dir -r requirements.txt
-ENV PATH="/opt/venv/bin:$PATH"
+ENV PATH="/opt/venv/bin:/usr/bin:/usr/local/bin:$PATH"
+ENV NODE_PATH="/usr/lib/node_modules"
 
 # Install Node.js dependencies
 COPY scripts/video/package.json .
