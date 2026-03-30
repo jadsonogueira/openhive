@@ -88,19 +88,35 @@ def download_video(url: str, output_dir: str) -> dict:
 
 
 def transcribe_video(video_path: str, model_name: str = "tiny", language: str = None) -> dict:
-    """Transcribe video with Whisper."""
-    import whisper
+    """Transcribe video with faster-whisper."""
+    from faster_whisper import WhisperModel
 
-    print(f"Loading Whisper model '{model_name}'...")
-    model = whisper.load_model(model_name)
+    print(f"Loading faster-whisper model '{model_name}'...")
+    model = WhisperModel(model_name, compute_type="int8", device="cpu")
 
     print("Transcribing...")
-    options = {"word_timestamps": True, "verbose": False}
-    if language:
-        options["language"] = language
+    segments_iter, info = model.transcribe(
+        video_path,
+        language=language,
+        word_timestamps=True,
+        vad_filter=True,
+    )
 
-    result = model.transcribe(video_path, **options)
-    return result
+    # Convert to openai-whisper compatible format
+    segments = []
+    for seg in segments_iter:
+        words = []
+        if seg.words:
+            for w in seg.words:
+                words.append({"start": w.start, "end": w.end, "word": w.word})
+        segments.append({
+            "start": seg.start,
+            "end": seg.end,
+            "text": seg.text,
+            "words": words,
+        })
+
+    return {"segments": segments, "language": info.language}
 
 
 def score_segment(text: str) -> tuple:

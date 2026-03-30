@@ -234,23 +234,26 @@ def create_vertical_layout(input_path: str, output_path: str, face_info: dict):
 
 
 def transcribe_clip(video_path: str, model_name: str = "tiny", language: str = None) -> list:
-    """Transcribe a clip with Whisper and return word-level segments."""
-    import whisper
+    """Transcribe a clip with faster-whisper and return word-level segments."""
+    from faster_whisper import WhisperModel
 
-    model = whisper.load_model(model_name)
-    options = {"word_timestamps": True, "verbose": False}
-    if language:
-        options["language"] = language
+    model = WhisperModel(model_name, compute_type="int8", device="cpu")
+    segments_iter, info = model.transcribe(
+        video_path,
+        language=language,
+        word_timestamps=True,
+        vad_filter=True,
+    )
 
-    result = model.transcribe(video_path, **options)
     words = []
-    for seg in result.get("segments", []):
-        for w in seg.get("words", []):
-            words.append({
-                "start": w["start"],
-                "end": w["end"],
-                "text": w["word"].strip(),
-            })
+    for seg in segments_iter:
+        if seg.words:
+            for w in seg.words:
+                words.append({
+                    "start": w.start,
+                    "end": w.end,
+                    "text": w.word.strip(),
+                })
     return words
 
 
