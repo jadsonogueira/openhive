@@ -35,6 +35,45 @@ STRONG_WORDS = STRONG_WORDS_PT + STRONG_WORDS_EN
 COOKIES_PATH = os.environ.get("YT_COOKIES_PATH", "/app/cookies.txt")
 
 
+def download_with_cobalt(url: str, output_path: str) -> bool:
+    """Try downloading video using cobalt.tools API."""
+    import urllib.request
+    import urllib.error
+
+    cobalt_url = "https://api.cobalt.tools"
+    headers = {
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+    }
+    body = json.dumps({"url": url, "videoQuality": "1080", "filenameStyle": "basic"}).encode()
+
+    try:
+        req = urllib.request.Request(cobalt_url, data=body, headers=headers, method="POST")
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            data = json.loads(resp.read().decode())
+
+        if data.get("status") == "tunnel" or data.get("status") == "redirect":
+            video_url = data.get("url")
+            if video_url:
+                print(f"[cobalt] Downloading from: {video_url[:80]}...")
+                urllib.request.urlretrieve(video_url, output_path)
+                return True
+
+        if data.get("status") == "picker" and data.get("picker"):
+            # Pick first video option
+            for item in data["picker"]:
+                if item.get("url"):
+                    print(f"[cobalt] Downloading picker item...")
+                    urllib.request.urlretrieve(item["url"], output_path)
+                    return True
+
+        print(f"[cobalt] Unexpected response: {data.get('status')}")
+        return False
+    except Exception as e:
+        print(f"[cobalt] Failed: {e}")
+        return False
+
+
 def get_ytdlp_args() -> list:
     """Return yt-dlp extra arguments for auth and bot bypass."""
     args = [
@@ -59,13 +98,13 @@ def get_video_duration(video_path: str) -> int:
 
 
 def download_video(url: str, output_dir: str) -> dict:
-    """Download video with yt-dlp and return metadata. Skips if video already exists (upload)."""
+    """Download video. Tries: 1) skip if exists (upload), 2) cobalt.tools, 3) yt-dlp fallback."""
     video_path = os.path.join(output_dir, "video.mp4")
 
     # If video already exists (uploaded directly), skip download
     if os.path.exists(video_path):
         duration = get_video_duration(video_path)
-        info = {
+        return {
             "title": os.path.basename(output_dir),
             "channel": "Upload",
             "duration": duration,
@@ -73,26 +112,46 @@ def download_video(url: str, output_dir: str) -> dict:
             "url": url,
             "video_path": video_path,
         }
-        return info
 
+    # Try cobalt.tools first (works without cookies/auth)
+    print("[download] Trying cobalt.tools...")
+    if download_with_cobalt(url, video_path):
+        if os.path.exists(video_path) and os.path.getsize(video_path) > 10000:
+            duration = get_video_duration(video_path)
+            print(f"[download] cobalt.tools success! Duration: {duration}s")
+            return {
+                "title": "Video",
+                "channel": "Unknown",
+                "duration": duration,
+                "views": 0,
+                "url": url,
+                "video_path": video_path,
+            }
+        else:
+            # File too small or empty, remove and try yt-dlp
+            try: os.remove(video_path)
+            except: pass
+
+    # Fallback to yt-dlp
+    print("[download] cobalt failed, trying yt-dlp...")
     extra = get_ytdlp_args()
 
-    # Get metadata first
-    meta_cmd = [
-        "yt-dlp", "--dump-json", "--no-download", *extra, url
-    ]
-    result = subprocess.run(meta_cmd, capture_output=True, text=True)
-    if result.returncode != 0:
-        raise RuntimeError(f"yt-dlp metadata failed: {result.stderr}")
-
-    meta = json.loads(result.stdout)
-    info = {
-        "title": meta.get("title", "Unknown"),
-        "channel": meta.get("channel", meta.get("uploader", "Unknown")),
-        "duration": meta.get("duration", 0),
-        "views": meta.get("view_count", 0),
-        "url": url,
-    }
+    # Try to get metadata
+    info = {"title": "Video", "channel": "Unknown", "duration": 0, "views": 0, "url": url}
+    try:
+        meta_cmd = ["yt-dlp", "--dump-json", "--no-download", *extra, url]
+        result = subprocess.run(meta_cmd, capture_output=True, text=True)
+        if result.returncode == 0:
+            meta = json.loads(result.stdout)
+            info = {
+                "title": meta.get("title", "Unknown"),
+                "channel": meta.get("channel", meta.get("uploader", "Unknown")),
+                "duration": meta.get("duration", 0),
+                "views": meta.get("view_count", 0),
+                "url": url,
+            }
+    except:
+        pass
 
     # Download video
     dl_cmd = [
@@ -105,7 +164,7 @@ def download_video(url: str, output_dir: str) -> dict:
     ]
     result = subprocess.run(dl_cmd, capture_output=True, text=True)
     if result.returncode != 0:
-        raise RuntimeError(f"yt-dlp download failed: {result.stderr}")
+        raise RuntimeError(f"Download failed. Try uploading the video directly instead.\n{result.stderr[-300:]}")
 
     info["video_path"] = video_path
     return info
