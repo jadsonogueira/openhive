@@ -24,6 +24,9 @@ services:
       dockerfile: packages/api/Dockerfile
     ports:
       - '3001:3001'
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      REDIS_URL: ${REDIS_URL}
     volumes:
       - shared-data:/app/shared
     depends_on:
@@ -76,6 +79,8 @@ services:
       context: .
       dockerfile: Dockerfile.video
     environment:
+      DATABASE_URL: ${DATABASE_URL}
+      REDIS_URL: ${REDIS_URL}
       MINIO_ENDPOINT: minio
       MINIO_PORT: '9000'
       MINIO_ACCESS_KEY: minioadmin
