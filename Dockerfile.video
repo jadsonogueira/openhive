@@ -1,6 +1,6 @@
 FROM python:3.12-slim
 
-# Install ffmpeg + Node.js 22 + OpenCV system deps
+# Install ffmpeg + Node.js 22
 RUN apt-get update && \
     apt-get install -y --no-install-recommends ffmpeg curl ca-certificates libglib2.0-0 && \
     curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && \
@@ -9,9 +9,11 @@ RUN apt-get update && \
 
 WORKDIR /app
 
-# Install Python dependencies
+# Install Python dependencies in virtual env
 COPY scripts/video/requirements.txt .
-RUN pip install --no-cache-dir --break-system-packages -r requirements.txt
+RUN python3 -m venv /opt/venv && \
+    /opt/venv/bin/pip install --no-cache-dir -r requirements.txt
+ENV PATH="/opt/venv/bin:$PATH"
 
 # Install Node.js dependencies
 COPY scripts/video/package.json .
@@ -24,7 +26,6 @@ RUN npx prisma generate
 # Copy worker + Python scripts
 COPY scripts/video/ ./
 
-# Work directory for video processing
 RUN mkdir -p /tmp/instapost-videos
 
 CMD ["node", "worker.mjs"]
