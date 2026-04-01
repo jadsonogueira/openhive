@@ -22,10 +22,11 @@ const ALLOWED_KEYS = [
   'FACEBOOK_APP_SECRET',
   'MCP_AUTH_TOKEN',
   'MCP_URL',
+  'MCP_TOKEN',
   'YOUTUBE_COOKIES',
 ];
 
-const NON_SECRET_KEYS = ['MCP_URL', 'TELEGRAM_ALLOWED_CHAT_IDS', 'INSTAGRAM_USER_ID', 'FACEBOOK_APP_ID', 'YOUTUBE_COOKIES'];
+const NON_SECRET_KEYS = ['MCP_URL', 'MCP_TOKEN', 'TELEGRAM_ALLOWED_CHAT_IDS', 'INSTAGRAM_USER_ID', 'FACEBOOK_APP_ID', 'YOUTUBE_COOKIES'];
 
 // Check if a key has a value in .env
 function getEnvValue(key: string): string | undefined {
@@ -38,6 +39,7 @@ function getEnvValue(key: string): string | undefined {
     FACEBOOK_APP_ID: env.FACEBOOK_APP_ID,
     FACEBOOK_APP_SECRET: env.FACEBOOK_APP_SECRET,
     MCP_AUTH_TOKEN: env.MCP_AUTH_TOKEN,
+    MCP_TOKEN: env.INTERNAL_SERVICE_TOKEN,
   };
   return map[key];
 }

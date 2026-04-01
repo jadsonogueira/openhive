@@ -248,6 +248,29 @@ export default function SettingsPage() {
                 26 tools disponiveis: posts, tarefas, projetos, modulos, imagens, legendas, templates HTML
               </p>
 
+              {/* MCP Token */}
+              <div className="mt-3 space-y-2">
+                <label className="block text-[11px] font-semibold text-text-muted">Token de Acesso (MCP)</label>
+                <div className="flex items-center gap-2">
+                  <code className="flex-1 bg-bg-main rounded-lg px-3 py-2 text-xs font-mono text-text-primary truncate">
+                    {settings['MCP_TOKEN']?.hasValue ? settings['MCP_TOKEN'].value : 'Nao configurado'}
+                  </code>
+                  {settings['MCP_TOKEN']?.hasValue && (
+                    <button
+                      onClick={() => {
+                        navigator.clipboard.writeText(settings['MCP_TOKEN']?.value || '');
+                        setMcpCopied(true);
+                        setTimeout(() => setMcpCopied(false), 2000);
+                      }}
+                      className="flex items-center gap-1 px-3 py-2 rounded-lg bg-primary/10 text-primary text-xs font-semibold hover:bg-primary/20 transition-colors"
+                    >
+                      {mcpCopied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                      {mcpCopied ? 'Copiado!' : 'Copiar'}
+                    </button>
+                  )}
+                </div>
+              </div>
+
               {/* MCP JSON Config */}
               {settings['MCP_URL']?.hasValue && (
                 <div className="mt-4 p-4 rounded-lg bg-bg-main">
@@ -260,7 +283,7 @@ export default function SettingsPage() {
                             openhive: {
                               url: settings['MCP_URL']?.value || '',
                               headers: {
-                                Authorization: 'Bearer ' + (settings['INTERNAL_SERVICE_TOKEN']?.value || 'seu-token-aqui'),
+                                Authorization: 'Bearer ' + (settings['MCP_TOKEN']?.value || 'seu-token-aqui'),
                               },
                             },
                           },
@@ -281,7 +304,7 @@ export default function SettingsPage() {
     openhive: {
       url: settings['MCP_URL']?.value || 'https://seu-servidor/mcp',
       headers: {
-        Authorization: 'Bearer seu-token-aqui',
+        Authorization: 'Bearer ' + (settings['MCP_TOKEN']?.value || 'seu-token-aqui'),
       },
     },
   },
