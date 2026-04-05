@@ -80,7 +80,7 @@ O OpenHive usa **Docker Compose** em todos os cenarios. Escolha a opcao que se e
 | **Desenvolvimento local** | Docker Compose sobe o banco, cache e storage. A aplicacao roda com `npm run dev`. | `docker-compose.yml` |
 | **VPS com SSH** | Docker Compose sobe **tudo** (infra + app) com um unico comando. | `docker-compose.production.yml` |
 | **Coolify** | Voce aponta o repo e o Coolify usa o Docker Compose pra buildar e rodar tudo. | `docker-compose.prod.yml` |
-| **Easypanel** | Voce cria cada servico no painel apontando pros Dockerfiles do repo. | Dockerfiles individuais |
+| **Easypanel** | Voce aponta o repo e o Easypanel usa o Docker Compose pra buildar e rodar tudo. | `docker-compose.prod.yml` |
 
 > **Resumo:** em todos os casos voce precisa de Docker. A unica diferenca e se voce roda `docker compose` direto no terminal ou se uma plataforma (Coolify/Easypanel) faz isso por voce.
 
@@ -417,70 +417,143 @@ URL do MCP: `https://mcp.seudominio.com/mcp`
 
 ## Instalacao no Easypanel
 
-O Easypanel e um painel de controle self-hosted para Docker. Diferente do Coolify, ele nao le Docker Compose diretamente — voce cria cada servico individualmente apontando para os Dockerfiles do repositorio. O Easypanel cuida do build, deploy, SSL e dominios.
+O Easypanel e um painel de controle self-hosted para Docker. Ele suporta deploy via **Docker Compose** — o jeito mais facil de subir o OpenHive inteiro com poucos cliques.
 
 ### Pre-requisitos
 
 - VPS Ubuntu 22+ (minimo 2GB RAM)
 - Easypanel instalado ([como instalar](https://easypanel.io/docs/get-started))
 
-### Visao geral dos servicos
+### O que vai ser criado
 
-Voce vai criar **7 servicos** no Easypanel, cada um com seu Dockerfile:
+O Docker Compose (`docker-compose.prod.yml`) sobe **8 containers** automaticamente:
 
-| Servico | Tipo no Easypanel | Dockerfile | Porta | Dominio |
-|---------|-------------------|------------|-------|---------|
-| Postgres | Database > Postgres 16 | (imagem pronta) | interno | - |
-| Redis | Database > Redis | (imagem pronta) | interno | - |
-| MinIO | App > Docker Image | (imagem pronta) | 9000/9001 | `s3.seudominio.com` |
-| API | App > Github | `packages/api/Dockerfile` | 3001 | `api.seudominio.com` |
-| Web | App > Github | `packages/web/Dockerfile` | 3000 | `app.seudominio.com` |
-| MCP Server | App > Github | `packages/mcp/Dockerfile` | 3002 | `mcp.seudominio.com` |
-| Renderer | App > Github | `Dockerfile.renderer` | 3003 | - |
-| Bot (opcional) | App > Github | `packages/bot/Dockerfile` | - | - |
+| Container | Servico | Porta |
+|-----------|---------|-------|
+| `postgres` | PostgreSQL 16 (banco de dados) | interna |
+| `redis` | Redis 7 (filas e cache) | interna |
+| `minio` | MinIO (storage S3 para imagens) | 9000 / 9001 |
+| `api` | API Express (backend) | 3001 |
+| `web` | Next.js (frontend) | 3000 |
+| `telegram-bot` | Telegram Bot | - |
+| `mcp-server` | MCP Server (26 tools) | 3002 |
+| `renderer` | Puppeteer (HTML para PNG) | 3003 |
 
-### Passo 1: Criar projeto e infraestrutura
+Voce nao precisa criar cada servico manualmente — o Docker Compose faz tudo.
 
-1. Acesse o Easypanel > **Create Project** > nome: "openhive"
+### Passo 1: Criar o projeto
 
-2. **Postgres**: + Service > Databases > Postgres 16
-   - Anote a connection string (ex: `postgres://user:pass@postgres.openhive.internal:5432/db`)
+1. Acesse o painel do Easypanel (ex: `http://sua-vps:3000`)
+2. Clique **Create Project** > nome: `openhive`
 
-3. **Redis**: + Service > Databases > Redis
-   - Anote a connection string (ex: `redis://default:pass@redis.openhive.internal:6379`)
+### Passo 2: Adicionar como Docker Compose
 
-4. **MinIO**: + Service > App > Docker Image
+1. Dentro do projeto, clique **+ Service**
+2. Selecione **Docker Compose**
+3. Em **Source**, selecione **Github** (ou **Git URL** para repo publico)
+4. URL: `https://github.com/NetoNetoArreche/instapost.git`
+5. Branch: `main`
+6. Docker Compose Path: `docker-compose.prod.yml`
+7. Clique **Save**
+
+> **Isso e tudo!** O Easypanel vai ler o `docker-compose.prod.yml` e criar todos os 8 servicos automaticamente. Voce nao precisa configurar containers manualmente.
+
+### Passo 3: Configurar variaveis de ambiente
+
+Va em **Environment Variables** do servico Docker Compose e adicione:
+
+```bash
+# === Senhas da infraestrutura ===
+# Gere senhas fortes (ex: openssl rand -hex 16)
+DB_PASSWORD=CHANGE_ME
+REDIS_PASSWORD=CHANGE_ME
+MINIO_ACCESS_KEY=minioadmin
+MINIO_SECRET_KEY=CHANGE_ME
+
+# === Seguranca ===
+# Gere com: openssl rand -hex 32
+JWT_SECRET=CHANGE_ME
+INTERNAL_SERVICE_TOKEN=CHANGE_ME
+
+# === URLs dos seus dominios ===
+# Ajuste para os dominios que voce vai configurar no Passo 4
+FRONTEND_URL=https://app.seudominio.com
+MINIO_PUBLIC_URL=https://s3.seudominio.com
+
+# === Google Gemini (geracao de imagens e legendas) ===
+# Pegue sua chave em: https://aistudio.google.com/
+NANO_BANANA_API_KEY=sua_chave_do_google_ai_studio
+NANO_BANANA_PROVIDER=google
+
+# === Telegram Bot (opcional) ===
+# Crie um bot com @BotFather no Telegram
+TELEGRAM_BOT_TOKEN=token_do_botfather
+TELEGRAM_ALLOWED_CHAT_IDS=seu_chat_id
+```
+
+### Passo 4: Configurar dominios
+
+No Easypanel, configure dominios para os servicos que precisam ser acessados externamente:
+
+| Servico | Dominio sugerido | Porta do container |
+|---------|------------------|--------------------|
+| **web** | `app.seudominio.com` | 3000 |
+| **api** | `api.seudominio.com` | 3001 |
+| **mcp-server** | `mcp.seudominio.com` | 3002 |
+| **minio** | `s3.seudominio.com` | 9000 |
+
+Para cada servico:
+1. Clique no servico > **Domains**
+2. Adicione o dominio > marque **HTTPS** (SSL automatico)
+3. Salve
+
+### Passo 5: Deploy
+
+1. Clique **Deploy**
+2. Aguarde ~10 minutos no primeiro deploy (build das imagens Docker)
+3. Quando todos aparecerem como **Running**, esta pronto
+
+### Passo 6: Acessar
+
+1. Abra `https://app.seudominio.com`
+2. Clique **Registrar** e crie sua conta (primeiro usuario = Owner)
+3. Va em **Configuracoes** e configure as integracoes (Gemini, Instagram, etc)
+
+URL do MCP: `https://mcp.seudominio.com/mcp`
+
+### Alternativa: criar servicos manualmente
+
+Se preferir nao usar Docker Compose no Easypanel, voce pode criar cada servico individualmente:
+
+<details>
+<summary>Clique para ver o passo a passo manual</summary>
+
+#### Infraestrutura
+
+1. **Postgres**: + Service > Databases > Postgres 16. Anote a connection string.
+2. **Redis**: + Service > Databases > Redis. Anote a connection string.
+3. **MinIO**: + Service > App > Docker Image
    - Image: `minio/minio:latest`
    - Command: `server /data --console-address :9001`
    - Portas: `9000` e `9001`
    - Env: `MINIO_ROOT_USER=minioadmin`, `MINIO_ROOT_PASSWORD=CHANGE_ME`
-   - Configure dominio para porta 9000 (ex: `s3.seudominio.com`)
+   - Dominio para porta 9000 (ex: `s3.seudominio.com`)
 
-### Passo 2: Servico API (backend)
+#### API (backend)
 
-1. + Service > App > Github
-2. Repo: `NetoNetoArreche/instapost`, Branch: `main`
-3. Dockerfile: `packages/api/Dockerfile`
-4. Porta: `3001`
-5. Configure dominio: `api.seudominio.com`
-6. Env vars (substitua os valores entre `< >` pelos dados reais do Passo 1):
-
+- + Service > App > Github
+- Repo: `NetoNetoArreche/instapost`, Branch: `main`
+- Dockerfile: `packages/api/Dockerfile`, Porta: `3001`
+- Dominio: `api.seudominio.com`
+- Env vars:
 ```bash
 NODE_ENV=production
 PORT=3001
-
-# Banco - use a connection string do Postgres criado no Passo 1
 DATABASE_URL=postgres://<user>:<pass>@postgres.openhive.internal:5432/<db>
-
-# Redis - use a connection string do Redis criado no Passo 1
 REDIS_URL=redis://default:<pass>@redis.openhive.internal:6379
-
-# Seguranca (gere com: openssl rand -hex 32)
 JWT_SECRET=CHANGE_ME
 JWT_EXPIRES_IN=7d
 INTERNAL_SERVICE_TOKEN=CHANGE_ME
-
-# MinIO - use a senha definida no Passo 1
 MINIO_ENDPOINT=minio.openhive.internal
 MINIO_PORT=9000
 MINIO_USE_SSL=false
@@ -488,75 +561,37 @@ MINIO_ACCESS_KEY=minioadmin
 MINIO_SECRET_KEY=CHANGE_ME
 MINIO_PUBLIC_URL=https://s3.seudominio.com
 MINIO_BUCKET=openhive-images
-
-# URLs
 FRONTEND_URL=https://app.seudominio.com
-
-# Google Gemini (gerar imagens/legendas)
-NANO_BANANA_API_KEY=sua_chave_do_google_ai_studio
+NANO_BANANA_API_KEY=sua_chave_gemini
 NANO_BANANA_PROVIDER=google
 ```
 
-7. Deploy
+#### Web (frontend)
 
-### Passo 3: Servico Web (frontend)
+- + Service > App > Github
+- Dockerfile: `packages/web/Dockerfile`, Porta: `3000`
+- Dominio: `app.seudominio.com`
+- Env: `API_INTERNAL_URL=http://api.openhive.internal:3001`
 
-1. + Service > App > Github
-2. Repo: `NetoNetoArreche/instapost`, Branch: `main`
-3. Dockerfile: `packages/web/Dockerfile`
-4. Porta: `3000`
-5. Configure dominio: `app.seudominio.com`
-6. Env:
-```
-API_INTERNAL_URL=http://api.openhive.internal:3001
-```
-7. Deploy
+#### MCP Server
 
-### Passo 4: MCP Server
+- + Service > App > Github
+- Dockerfile: `packages/mcp/Dockerfile`, Porta: `3002`
+- Dominio: `mcp.seudominio.com`
+- Env: `API_URL=http://api.openhive.internal:3001`, `API_TOKEN=mesmo_INTERNAL_SERVICE_TOKEN`
 
-1. + Service > App > Github
-2. Repo: `NetoNetoArreche/instapost`, Branch: `main`
-3. Dockerfile: `packages/mcp/Dockerfile`
-4. Porta: `3002`
-5. Configure dominio: `mcp.seudominio.com`
-6. Env (use o mesmo `INTERNAL_SERVICE_TOKEN` da API):
-```
-API_URL=http://api.openhive.internal:3001
-API_TOKEN=mesmo_INTERNAL_SERVICE_TOKEN_da_api
-```
-7. Deploy
+#### Renderer
 
-### Passo 5: Renderer (para carrosseis HTML)
+- + Service > App > Github
+- Dockerfile: `Dockerfile.renderer`, Porta: `3003`
 
-1. + Service > App > Github
-2. Repo: `NetoNetoArreche/instapost`, Branch: `main`
-3. Dockerfile: `Dockerfile.renderer`
-4. Porta: `3003`
-5. Sem env vars necessarias
-6. Deploy
+#### Telegram Bot (opcional)
 
-### Passo 6: Telegram Bot (opcional)
+- + Service > App > Github
+- Dockerfile: `packages/bot/Dockerfile`
+- Env: `API_URL=http://api.openhive.internal:3001`, `API_TOKEN=mesmo_INTERNAL_SERVICE_TOKEN`, `TELEGRAM_BOT_TOKEN=...`, `TELEGRAM_ALLOWED_CHAT_IDS=...`
 
-1. + Service > App > Github
-2. Repo: `NetoNetoArreche/instapost`, Branch: `main`
-3. Dockerfile: `packages/bot/Dockerfile`
-4. Sem porta (nao precisa expor)
-5. Env:
-```
-API_URL=http://api.openhive.internal:3001
-API_TOKEN=mesmo_INTERNAL_SERVICE_TOKEN_da_api
-TELEGRAM_BOT_TOKEN=token_do_botfather
-TELEGRAM_ALLOWED_CHAT_IDS=seu_chat_id
-```
-6. Deploy
-
-### Passo 7: Acessar
-
-1. Abra `https://app.seudominio.com`
-2. Clique **Registrar** e crie sua conta (primeiro usuario = Owner)
-3. Va em **Configuracoes** e configure integracoes (Gemini, Instagram, etc)
-
-URL do MCP: `https://mcp.seudominio.com/mcp`
+</details>
 
 ---
 
