@@ -380,39 +380,44 @@ INTERNAL_SERVICE_TOKEN=CHANGE_ME
 
 ### Passo 5: Configurar dominios
 
-Agora que esta rodando, configure dominios em **Configuration** > **General**:
+Agora que esta rodando, voce precisa dizer ao Coolify quais servicos devem ser acessiveis. **Voce NAO precisa ter um dominio proprio** — o Coolify gera URLs automaticas.
+
+Va em **Configuration** > **General**. Para cada servico abaixo, clique **Generate Domain** (ou coloque seu dominio se tiver um):
 
 | Servico | Porta | O que e |
 |---------|-------|---------|
-| **web** | 3000 | Dashboard (o que voce acessa no navegador) |
-| **api** | 3001 | Backend (a web precisa dele) |
-| **mcp-server** | 3002 | MCP para IDEs (opcional) |
-| **minio** | 9000 | Storage de imagens |
+| **web** | 3000 | Dashboard — o que voce acessa no navegador |
+| **api** | 3001 | Backend — a web precisa dele pra funcionar |
+| **minio** | 9000 | Storage — onde as imagens ficam salvas |
+| **mcp-server** | 3002 | MCP — conexao com IDEs (opcional) |
 
-**Se voce tem dominio**: coloque `app.seusite.com` (web), `api.seusite.com` (api), etc.
-**Se NAO tem**: clique **Generate Domain** — o Coolify cria URLs automaticas.
+O Coolify gera URLs automaticas tipo `openhive-web-abc123.coolify.io`. Se voce tiver dominio proprio pode usar, mas **nao e obrigatorio**.
 
 O Coolify gera SSL (HTTPS) automaticamente.
 
+Anote as URLs geradas — voce vai precisar de 2 delas no proximo passo.
+
 ### Passo 6: Atualizar as URLs no ambiente
 
-Volte em **Environment Variables** e adicione estas 2 linhas com as URLs que voce acabou de configurar:
+Volte em **Environment Variables** e adicione estas 2 linhas, usando as URLs que o Coolify gerou:
 
 ```bash
-FRONTEND_URL=https://URL_DO_WEB_QUE_VOCE_CONFIGUROU
-MINIO_PUBLIC_URL=https://URL_DO_MINIO_QUE_VOCE_CONFIGUROU
+FRONTEND_URL=https://url-do-web-que-o-coolify-gerou
+MINIO_PUBLIC_URL=https://url-do-minio-que-o-coolify-gerou
 ```
 
 Clique **Save** e depois **Deploy** novamente para aplicar.
 
 ### Passo 7: Acessar e configurar
 
-1. Abra a URL do **web** no navegador
+1. Abra a URL do **web** no navegador (a mesma que voce colocou no FRONTEND_URL)
 2. Clique **Registrar** e crie sua conta (primeiro usuario = Owner)
 3. Va em **Configuracoes** no menu lateral e configure tudo pela interface:
    - **Geracao de Imagens** — cole sua chave do Google Gemini ([pegue aqui](https://aistudio.google.com/))
    - **Instagram** — conecte sua conta (opcional)
    - **Telegram Bot** — cole o token do BotFather (opcional)
+
+> **Resumo:** voce NAO precisa comprar um dominio. O Coolify gera URLs automaticas. Todas as integracoes (Gemini, Instagram, Telegram) sao configuradas pela interface web, nao por variaveis de ambiente.
 
 ---
 
@@ -483,47 +488,50 @@ Clique **Salvar**.
 
 ### Passo 5: Configurar dominios
 
-Agora que esta rodando, voce precisa configurar os dominios para conseguir acessar os servicos pelo navegador.
+Agora que esta rodando, voce precisa dizer ao Easypanel quais servicos devem ser acessiveis pelo navegador. **Voce NAO precisa ter um dominio proprio** — o Easypanel gera URLs automaticas pra voce.
 
 1. Clique em **Dominios** no menu lateral esquerdo
-2. Voce vai ver a lista de servicos. Configure dominio para estes 4:
+2. Clique em **Adicionar Dominio** para cada um dos 4 servicos abaixo:
 
-| Servico | Porta | O que e |
-|---------|-------|---------|
-| **web** | 3000 | Dashboard (o que voce acessa no navegador) |
-| **api** | 3001 | Backend (a web precisa dele) |
-| **mcp-server** | 3002 | MCP para IDEs (opcional) |
-| **minio** | 9000 | Storage de imagens |
+| # | Servico (escolha no dropdown) | Porta (digite) | O que e |
+|---|-------------------------------|-----------------|---------|
+| 1 | **web** | 3000 | Dashboard — o que voce acessa no navegador |
+| 2 | **api** | 3001 | Backend — a web precisa dele pra funcionar |
+| 3 | **minio** | 9000 | Storage — onde as imagens ficam salvas |
+| 4 | **mcp-server** | 3002 | MCP — conexao com IDEs (opcional) |
 
-**Se voce tem um dominio proprio** (ex: `seusite.com`):
-- Aponte os subdominos no DNS da sua VPS (A record para o IP dela)
-- Coloque: `app.seusite.com` (web), `api.seusite.com` (api), `s3.seusite.com` (minio)
+**No campo "Dominio"**: o Easypanel gera uma URL automatica baseada no IP da sua VPS (algo como `web-openhive.123-45-67-89.sslip.io`). Se voce tiver um dominio proprio, pode colocar (ex: `app.seusite.com`), mas **nao e obrigatorio**.
 
-**Se voce NAO tem dominio proprio**:
-- O Easypanel gera URLs automaticas com o IP da sua VPS
-- Clique **Generate Domain** em cada servico
-
-3. Anote as URLs geradas (ex: `https://app.seusite.com` ou `http://123.45.67.89:3000`)
+3. Clique **Criar** (ou **Salvar**) para cada um
+4. Anote as URLs que o Easypanel gerou — voce vai precisar de 2 delas no proximo passo
 
 ### Passo 6: Atualizar as URLs no ambiente
 
-Volte em **Ambiente** e adicione estas 2 linhas com as URLs que voce acabou de configurar:
+Volte em **Ambiente** e adicione estas 2 linhas no final, usando as URLs que o Easypanel gerou no passo anterior:
 
 ```bash
-FRONTEND_URL=https://URL_DO_WEB_QUE_VOCE_CONFIGUROU
-MINIO_PUBLIC_URL=https://URL_DO_MINIO_QUE_VOCE_CONFIGUROU
+FRONTEND_URL=https://url-do-web-que-apareceu-no-easypanel
+MINIO_PUBLIC_URL=https://url-do-minio-que-apareceu-no-easypanel
+```
+
+Por exemplo, se o Easypanel gerou `web-openhive.123-45-67-89.sslip.io` para o web e `minio-openhive.123-45-67-89.sslip.io` para o minio:
+```bash
+FRONTEND_URL=https://web-openhive.123-45-67-89.sslip.io
+MINIO_PUBLIC_URL=https://minio-openhive.123-45-67-89.sslip.io
 ```
 
 Clique **Salvar** e depois **Implantar** novamente para aplicar.
 
 ### Passo 7: Acessar e configurar
 
-1. Abra a URL do **web** no navegador
+1. Abra a URL do **web** no navegador (a mesma que voce colocou no FRONTEND_URL)
 2. Clique **Registrar** e crie sua conta (primeiro usuario = Owner)
 3. Va em **Configuracoes** no menu lateral e configure tudo pela interface:
    - **Geracao de Imagens** — cole sua chave do Google Gemini ([pegue aqui](https://aistudio.google.com/))
    - **Instagram** — conecte sua conta (opcional)
    - **Telegram Bot** — cole o token do BotFather (opcional)
+
+> **Resumo:** voce NAO precisa comprar um dominio. O Easypanel gera URLs automaticas. Todas as integracoes (Gemini, Instagram, Telegram) sao configuradas pela interface web, nao por variaveis de ambiente.
 
 ### Alternativa: criar servicos manualmente
 
