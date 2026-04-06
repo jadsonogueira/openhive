@@ -121,6 +121,25 @@ export const api = {
   cutVideoClips: (id: string, body: Record<string, unknown>) =>
     request(`/api/videos/${id}/cut`, { method: 'POST', body: JSON.stringify(body) }),
 
+  // Brands
+  listBrands: () => request<{ items: any[]; total: number }>('/api/brands'),
+
+  getBrand: (id: string) => request<any>(`/api/brands/${id}`),
+
+  getDefaultBrand: () => request<any>('/api/brands/default'),
+
+  createBrand: (body: Record<string, unknown>) =>
+    request('/api/brands', { method: 'POST', body: JSON.stringify(body) }),
+
+  updateBrand: (id: string, body: Record<string, unknown>) =>
+    request(`/api/brands/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
+
+  setDefaultBrand: (id: string) =>
+    request(`/api/brands/${id}/default`, { method: 'PUT' }),
+
+  deleteBrand: (id: string) =>
+    request(`/api/brands/${id}`, { method: 'DELETE' }),
+
   // Template image generation
   generateTemplate: (body: Record<string, unknown>) =>
     request<{ imageUrl: string }>('/api/generate/template', { method: 'POST', body: JSON.stringify(body) }),

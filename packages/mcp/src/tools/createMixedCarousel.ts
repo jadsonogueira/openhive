@@ -14,28 +14,56 @@ interface CreateMixedCarouselInput {
   aspect_ratio?: '1:1' | '4:5' | '9:16';
   tone?: string;
   scheduled_at?: string;
+  brand_id?: string;
+  apply_brand?: boolean;
 }
 
 export async function createMixedCarousel(input: CreateMixedCarouselInput) {
   const aspectRatio = input.aspect_ratio || '1:1';
   const images: Array<{ imageUrl: string; order: number; prompt?: string }> = [];
 
+  // Step 0: Resolve brand if provided
+  let brand: any = null;
+  if (input.brand_id && input.apply_brand !== false) {
+    try {
+      brand = await api.getBrand(input.brand_id);
+      console.log(`[MCP mixed_carousel] Brand applied: ${brand?.name}`);
+    } catch (err) {
+      console.warn('[MCP mixed_carousel] Failed to load brand:', err);
+    }
+  }
+
   // Step 1: Generate AI cover (first slide)
   console.log('[MCP mixed_carousel] Generating AI cover...');
-  const cover = await api.generateImage({ prompt: input.cover_prompt, aspectRatio });
-  images.push({ imageUrl: cover.imageUrl, order: 0, prompt: input.cover_prompt });
+  // Inject brand context into cover prompt if available
+  let coverPrompt = input.cover_prompt;
+  if (brand) {
+    const brandHints: string[] = [];
+    if (brand.primaryColor) brandHints.push(`paleta de cores ${brand.primaryColor} e ${brand.secondaryColor || ''}`);
+    if (brand.voiceTone) brandHints.push(`estilo ${brand.voiceTone}`);
+    if (brandHints.length > 0) {
+      coverPrompt = `${input.cover_prompt}. Identidade visual: ${brandHints.join(', ')}`;
+    }
+  }
+  const cover = await api.generateImage({ prompt: coverPrompt, aspectRatio });
+  images.push({ imageUrl: cover.imageUrl, order: 0, prompt: coverPrompt });
 
-  // Step 2: Generate template slides
+  // Step 2: Generate template slides (with brand colors/logo if available)
   console.log(`[MCP mixed_carousel] Generating ${input.slides.length} template slides...`);
   const slideResults = await Promise.allSettled(
-    input.slides.map((slide) =>
-      api.generateTemplate({
+    input.slides.map((slide) => {
+      const body: Record<string, unknown> = {
         title: slide.title,
         subtitle: slide.subtitle,
         template: slide.template || 'bold-gradient',
         aspectRatio,
-      })
-    )
+      };
+      if (input.brand_id) {
+        body.brandId = input.brand_id;
+        body.applyBrand = input.apply_brand !== false;
+      }
+      return api.generateTemplate(body);
+    })
   );
 
   for (let i = 0; i < slideResults.length; i++) {
@@ -60,9 +88,20 @@ export async function createMixedCarousel(input: CreateMixedCarouselInput) {
   let hashtags = input.hashtags;
   if (!caption) {
     const topic = input.cover_prompt;
-    const result = await api.generateCaption({ topic, tone: input.tone });
+    const tone = input.tone || (brand?.voiceTone || undefined);
+    const result = await api.generateCaption({ topic, tone });
     caption = result.caption;
     hashtags = hashtags || result.hashtags;
+  }
+
+  // Merge brand default hashtags
+  if (brand?.defaultHashtags?.length) {
+    const existing = new Set((hashtags || []).map((h: string) => h.toLowerCase()));
+    const merged = [...(hashtags || [])];
+    for (const tag of brand.defaultHashtags) {
+      if (!existing.has(tag.toLowerCase())) merged.push(tag);
+    }
+    hashtags = merged;
   }
 
   // Step 4: Create post
@@ -83,6 +122,7 @@ export async function createMixedCarousel(input: CreateMixedCarouselInput) {
     cover_image: images[0].imageUrl,
     template_slides: images.length - 1,
     total_images: images.length,
+    brand_applied: brand ? { id: brand.id, name: brand.name } : null,
     status: post.status,
     scheduled_at: post.scheduledAt || null,
   };

@@ -4,6 +4,15 @@ import http from 'node:http';
 import { z } from 'zod';
 import { createPost } from './tools/createPost';
 import { createMixedCarousel } from './tools/createMixedCarousel';
+import {
+  listBrands,
+  getBrand,
+  getDefaultBrand,
+  createBrand,
+  updateBrand,
+  setDefaultBrand,
+  deleteBrand,
+} from './tools/brands';
 import { generateImage } from './tools/generateImage';
 import { generateCaption } from './tools/generateCaption';
 import { schedulePost } from './tools/schedulePost';
@@ -69,7 +78,7 @@ function registerTools(server: McpServer) {
 
   server.tool(
     'create_mixed_carousel',
-    'Cria carrossel misto: capa gerada por IA (Gemini) + slides informativos em HTML/Template. Ideal para posts educativos com capa chamativa',
+    'Cria carrossel misto: capa gerada por IA (Gemini) + slides informativos em HTML/Template. Aceita brand_id para aplicar logo, cores e tom de voz da marca automaticamente',
     {
       cover_prompt: z.string().describe('Prompt para gerar a imagem de capa via IA (primeiro slide)'),
       slides: z.array(z.object({
@@ -82,9 +91,11 @@ function registerTools(server: McpServer) {
       aspect_ratio: z.enum(['1:1', '4:5', '9:16']).optional().describe('Proporcao: 1:1 (Feed), 4:5 (Retrato), 9:16 (Stories)'),
       tone: z.string().optional().describe('Tom da legenda auto-gerada: educativo, inspirador, humor, noticia'),
       scheduled_at: z.string().optional().describe('Data/hora para agendar (ISO 8601)'),
+      brand_id: z.string().optional().describe('ID do brand para aplicar identidade visual (logo, cores, tom de voz, hashtags). Use list_brands para descobrir IDs disponiveis'),
+      apply_brand: z.boolean().optional().describe('Se true (padrao), aplica logo + cores + tom de voz do brand. Se false, ignora brand mesmo com brand_id'),
     },
-    async ({ cover_prompt, slides, caption, hashtags, aspect_ratio, tone, scheduled_at }) => {
-      const result = await createMixedCarousel({ cover_prompt, slides, caption, hashtags, aspect_ratio, tone, scheduled_at });
+    async ({ cover_prompt, slides, caption, hashtags, aspect_ratio, tone, scheduled_at, brand_id, apply_brand }) => {
+      const result = await createMixedCarousel({ cover_prompt, slides, caption, hashtags, aspect_ratio, tone, scheduled_at, brand_id, apply_brand });
       return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
     },
   );
@@ -144,6 +155,109 @@ function registerTools(server: McpServer) {
     },
     async ({ post_id, caption, hashtags, scheduled_at, status }) => {
       const result = await updatePost({ post_id, caption, hashtags, scheduled_at, status });
+      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+    },
+  );
+
+  // Brand tools
+
+  server.tool(
+    'list_brands',
+    'Lista todos os brands cadastrados (identidade visual: logo, cores, produtos, tom de voz). Use isso ANTES de criar qualquer post visual para perguntar ao usuario qual brand aplicar',
+    {},
+    async () => {
+      const result = await listBrands();
+      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+    },
+  );
+
+  server.tool(
+    'get_brand',
+    'Retorna detalhes completos de um brand especifico',
+    {
+      brand_id: z.string().describe('ID do brand'),
+    },
+    async ({ brand_id }) => {
+      const result = await getBrand({ brand_id });
+      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+    },
+  );
+
+  server.tool(
+    'get_default_brand',
+    'Retorna o brand padrao do usuario (se houver). Util para aplicar automaticamente quando o usuario nao especifica',
+    {},
+    async () => {
+      const result = await getDefaultBrand();
+      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+    },
+  );
+
+  server.tool(
+    'create_brand',
+    'Cria um novo brand com identidade visual',
+    {
+      name: z.string().describe('Nome do brand'),
+      logo_url: z.string().optional().describe('URL do logo'),
+      primary_color: z.string().optional().describe('Cor primaria em hex (#RRGGBB)'),
+      secondary_color: z.string().optional().describe('Cor secundaria em hex (#RRGGBB)'),
+      accent_color: z.string().optional().describe('Cor de destaque em hex'),
+      font_family: z.string().optional().describe('Familia de fonte preferida'),
+      description: z.string().optional().describe('Descricao do brand'),
+      voice_tone: z.string().optional().describe('Tom de voz: profissional, descontraido, educativo, etc'),
+      products: z.array(z.string()).optional().describe('Lista de produtos/servicos'),
+      default_hashtags: z.array(z.string()).optional().describe('Hashtags padrao a aplicar nos posts'),
+      is_default: z.boolean().optional().describe('Se este sera o brand padrao'),
+    },
+    async (input) => {
+      const result = await createBrand(input);
+      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+    },
+  );
+
+  server.tool(
+    'update_brand',
+    'Atualiza um brand existente',
+    {
+      brand_id: z.string().describe('ID do brand'),
+      name: z.string().optional(),
+      logo_url: z.string().optional(),
+      primary_color: z.string().optional(),
+      secondary_color: z.string().optional(),
+      accent_color: z.string().optional(),
+      font_family: z.string().optional(),
+      description: z.string().optional(),
+      voice_tone: z.string().optional(),
+      products: z.array(z.string()).optional(),
+      default_hashtags: z.array(z.string()).optional(),
+      is_default: z.boolean().optional(),
+    },
+    async (input) => {
+      const result = await updateBrand(input);
+      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+    },
+  );
+
+  server.tool(
+    'set_default_brand',
+    'Define um brand como padrao (desmarca os outros automaticamente)',
+    {
+      brand_id: z.string().describe('ID do brand a tornar padrao'),
+    },
+    async ({ brand_id }) => {
+      const result = await setDefaultBrand({ brand_id });
+      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+    },
+  );
+
+  server.tool(
+    'delete_brand',
+    'Remove um brand',
+    {
+      brand_id: z.string().describe('ID do brand a remover'),
+    },
+    async ({ brand_id }) => {
+      const result = await deleteBrand({ brand_id });
       return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
     },
   );

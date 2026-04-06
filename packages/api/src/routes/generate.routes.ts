@@ -5,6 +5,8 @@ import { validate } from '../middleware/validate';
 import { generateImageController, generateCaptionController } from '../controllers/generate.controller';
 import { renderTemplateToImage, renderHtmlToImage } from '../services/template-renderer.service';
 import { TEMPLATES } from '../services/templates';
+import { prisma } from '../config/database';
+import { resolveOwnerId } from '../helpers/resolveOwnerId';
 
 const router = Router();
 
@@ -35,11 +37,34 @@ const templateSchema = z.object({
   accent: z.string().optional(),
   template: z.string().optional().default('bold-gradient'),
   aspectRatio: z.enum(['1:1', '9:16', '4:5']).optional(),
+  // Brand integration
+  brandId: z.string().optional(),
+  primaryColor: z.string().optional(),
+  secondaryColor: z.string().optional(),
+  logoUrl: z.string().optional(),
+  brandName: z.string().optional(),
+  applyBrand: z.boolean().optional(),
 });
 
 router.post('/template', validate(templateSchema), async (req: AuthRequest, res: Response) => {
   try {
-    const result = await renderTemplateToImage(req.body);
+    const body = { ...req.body };
+
+    // If brandId provided, fetch brand and apply colors/logo
+    if (body.brandId && body.applyBrand !== false) {
+      const userId = await resolveOwnerId(req.userId!);
+      const brand = await prisma.brand.findFirst({
+        where: { id: body.brandId, userId },
+      });
+      if (brand) {
+        body.primaryColor = body.primaryColor || brand.primaryColor;
+        body.secondaryColor = body.secondaryColor || brand.secondaryColor;
+        body.logoUrl = body.logoUrl || brand.logoUrl || undefined;
+        body.brandName = body.brandName || brand.name;
+      }
+    }
+
+    const result = await renderTemplateToImage(body);
     res.json({ success: true, data: result });
   } catch (err: any) {
     res.status(500).json({ success: false, error: err?.message || 'Failed to render template' });

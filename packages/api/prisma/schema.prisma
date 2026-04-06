@@ -31,11 +31,33 @@ model User {
   settings       Setting[]
   instagramTokens InstagramToken[]
   invitations    Invitation[]
+  brands         Brand[]
   allowedPages   String[]        @default([])
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
 
   @@index([ownerId])
+}
+
+model Brand {
+  id              String   @id @default(uuid())
+  name            String
+  logoUrl         String?
+  primaryColor    String   @default("#6C5CE7")
+  secondaryColor  String   @default("#E84393")
+  accentColor     String?
+  fontFamily      String?
+  description     String?
+  voiceTone       String?
+  products        String[] @default([])
+  defaultHashtags String[] @default([])
+  isDefault       Boolean  @default(false)
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([userId])
 }
 
 model Invitation {

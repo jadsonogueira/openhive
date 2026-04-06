@@ -254,6 +254,18 @@ export const api = {
   generateTemplate: (body: { title: string; subtitle?: string; body?: string; accent?: string; template?: string; aspectRatio?: string }) =>
     request<{ imageUrl: string }>('/api/generate/template', { method: 'POST', body: JSON.stringify(body) }),
 
+  // Brands
+  listBrands: () => request<{ items: any[]; total: number }>('/api/brands'),
+  getBrand: (id: string) => request<any>(`/api/brands/${id}`),
+  getDefaultBrand: () => request<any>('/api/brands/default'),
+  createBrand: (body: Record<string, unknown>) =>
+    request('/api/brands', { method: 'POST', body: JSON.stringify(body) }),
+  updateBrand: (id: string, body: Record<string, unknown>) =>
+    request(`/api/brands/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
+  setDefaultBrand: (id: string) =>
+    request(`/api/brands/${id}/default`, { method: 'PUT' }),
+  deleteBrand: (id: string) => request(`/api/brands/${id}`, { method: 'DELETE' }),
+
   // Instagram Accounts
   listInstagramAccounts: () => request<any[]>('/api/instagram/accounts'),
   addInstagramAccount: (body: { accessToken: string; instagramUserId: string; username?: string }) =>
