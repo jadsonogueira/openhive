@@ -36,9 +36,11 @@ export default function NewPost() {
   const [postFile, setPostFile] = useState({ url: '', name: '' });
   const [fileUploading, setFileUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [genMode, setGenMode] = useState<'ai' | 'template'>('ai');
+  const [genMode, setGenMode] = useState<'ai' | 'template' | 'misto'>('ai');
   const [selectedTemplate, setSelectedTemplate] = useState('bold-gradient');
   const [templateSubtitle, setTemplateSubtitle] = useState('');
+  const [mistoSlideText, setMistoSlideText] = useState('');
+  const [mistoSlideSubtitle, setMistoSlideSubtitle] = useState('');
 
   const TEMPLATES = [
     { id: 'bold-gradient', name: 'Gradiente Bold', emoji: '🟣' },
@@ -64,6 +66,46 @@ export default function NewPost() {
       setActiveImageIndex(images.length);
     } catch (err: any) {
       setMessage(err.message || 'Erro ao gerar template');
+      setMessageType('error');
+    }
+    setGenLoading(false);
+  }
+
+  async function handleMistoSlide() {
+    if (!mistoSlideText) return;
+    setGenLoading(true);
+    setMessage('');
+    try {
+      const result = await api.generateTemplate({
+        title: mistoSlideText,
+        subtitle: mistoSlideSubtitle || undefined,
+        template: selectedTemplate,
+        aspectRatio,
+      });
+      setImages((prev) => [...prev, { url: result.imageUrl, prompt: mistoSlideText }]);
+      setActiveImageIndex(images.length);
+      setMistoSlideText('');
+      setMistoSlideSubtitle('');
+    } catch (err: any) {
+      setMessage(err.message || 'Erro ao gerar slide');
+      setMessageType('error');
+    }
+    setGenLoading(false);
+  }
+
+  async function handleMistoCover() {
+    if (!prompt) return;
+    setGenLoading(true);
+    setMessage('');
+    try {
+      const result = await api.generateImage(prompt, aspectRatio);
+      setImages((prev) => {
+        const newImages = [{ url: result.imageUrl, prompt }, ...prev];
+        return newImages;
+      });
+      setActiveImageIndex(0);
+    } catch (err: any) {
+      setMessage(err.message || 'Erro ao gerar capa');
       setMessageType('error');
     }
     setGenLoading(false);
@@ -217,7 +259,7 @@ export default function NewPost() {
                   onClick={() => setGenMode('ai')}
                   className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${genMode === 'ai' ? 'bg-white text-primary shadow-sm' : 'text-text-muted hover:text-text-primary'}`}
                 >
-                  IA (Gemini)
+                  IA
                 </button>
                 <button
                   onClick={() => setGenMode('template')}
@@ -225,22 +267,30 @@ export default function NewPost() {
                 >
                   Template
                 </button>
+                <button
+                  onClick={() => setGenMode('misto')}
+                  className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${genMode === 'misto' ? 'bg-white text-primary shadow-sm' : 'text-text-muted hover:text-text-primary'}`}
+                >
+                  Misto
+                </button>
               </div>
             </div>
             <div className="space-y-3">
-              {/* Shared: Prompt/Title field */}
-              <div>
-                <label className="block text-xs font-semibold text-text-secondary mb-1.5 uppercase tracking-wider">
-                  {genMode === 'ai' ? 'Prompt' : 'Texto Principal'}
-                </label>
-                <textarea
-                  value={prompt}
-                  onChange={(e) => setPrompt(e.target.value)}
-                  placeholder={genMode === 'ai' ? "Descreva o tema do post... Ex: 'Post sobre produtividade com dicas de organizacao'" : "Texto que aparece no post... Ex: '5 dicas de produtividade'"}
-                  rows={genMode === 'template' ? 2 : 3}
-                  className="input-field resize-none"
-                />
-              </div>
+              {/* Shared: Prompt/Title field (AI and Template modes) */}
+              {genMode !== 'misto' && (
+                <div>
+                  <label className="block text-xs font-semibold text-text-secondary mb-1.5 uppercase tracking-wider">
+                    {genMode === 'ai' ? 'Prompt' : 'Texto Principal'}
+                  </label>
+                  <textarea
+                    value={prompt}
+                    onChange={(e) => setPrompt(e.target.value)}
+                    placeholder={genMode === 'ai' ? "Descreva o tema do post... Ex: 'Post sobre produtividade com dicas de organizacao'" : "Texto que aparece no post... Ex: '5 dicas de produtividade'"}
+                    rows={genMode === 'template' ? 2 : 3}
+                    className="input-field resize-none"
+                  />
+                </div>
+              )}
               {/* Template mode: subtitle + template selector */}
               {genMode === 'template' && (
                 <>
@@ -324,6 +374,104 @@ export default function NewPost() {
                   </div>
                 </div>
               )}
+
+              {/* Misto mode: AI cover + Template slides */}
+              {genMode === 'misto' && (
+                <div className="space-y-4">
+                  <p className="text-[11px] text-text-muted bg-bg-main rounded-lg px-3 py-2">
+                    Capa gerada por IA + slides em HTML/Template. Gere a capa primeiro, depois adicione os slides.
+                  </p>
+
+                  {/* Step 1: AI Cover */}
+                  <div className="border border-border rounded-xl p-4 space-y-3">
+                    <div className="flex items-center gap-2">
+                      <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-[10px] font-bold text-primary">1</div>
+                      <h3 className="text-xs font-bold text-text-primary uppercase tracking-wider">Capa (IA)</h3>
+                      {images.length > 0 && (
+                        <span className="text-[10px] text-status-published bg-emerald-50 px-2 py-0.5 rounded-badge font-medium ml-auto">Gerada</span>
+                      )}
+                    </div>
+                    <textarea
+                      value={prompt}
+                      onChange={(e) => setPrompt(e.target.value)}
+                      placeholder="Descreva a imagem de capa... Ex: 'Imagem vibrante sobre produtividade com icones modernos'"
+                      rows={2}
+                      className="input-field resize-none"
+                    />
+                    <div className="flex gap-2">
+                      <button
+                        onClick={handleMistoCover}
+                        disabled={genLoading || !prompt || images.length >= 10}
+                        className="btn-cta flex-1 justify-center text-xs py-2"
+                      >
+                        {genLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Zap className="w-3.5 h-3.5" strokeWidth={2} />}
+                        {genLoading ? 'Gerando...' : images.length > 0 ? 'Regerar Capa' : 'Gerar Capa com IA'}
+                      </button>
+                      <button onClick={handleGenerateCaption} disabled={genLoading || !prompt} className="btn-ghost flex-1 justify-center text-xs py-2">
+                        <Edit3 className="w-3.5 h-3.5" strokeWidth={1.5} />
+                        Gerar Legenda
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Step 2: Template Slides */}
+                  <div className="border border-border rounded-xl p-4 space-y-3">
+                    <div className="flex items-center gap-2">
+                      <div className="w-6 h-6 rounded-full bg-accent-pink/10 flex items-center justify-center text-[10px] font-bold text-accent-pink">2</div>
+                      <h3 className="text-xs font-bold text-text-primary uppercase tracking-wider">Slides (Template)</h3>
+                      {images.length >= 2 && (
+                        <span className="text-[10px] text-primary bg-primary/10 px-2 py-0.5 rounded-badge font-medium ml-auto">{images.length - 1} slides</span>
+                      )}
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-semibold text-text-muted mb-1 uppercase tracking-wider">Texto do slide</label>
+                      <input
+                        value={mistoSlideText}
+                        onChange={(e) => setMistoSlideText(e.target.value)}
+                        placeholder="Ex: '5 dicas de produtividade'"
+                        className="input-field"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-semibold text-text-muted mb-1 uppercase tracking-wider">Subtitulo (opcional)</label>
+                      <input
+                        value={mistoSlideSubtitle}
+                        onChange={(e) => setMistoSlideSubtitle(e.target.value)}
+                        placeholder="Texto complementar..."
+                        className="input-field"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-semibold text-text-muted mb-1 uppercase tracking-wider">Template</label>
+                      <div className="grid grid-cols-3 gap-1.5">
+                        {TEMPLATES.map((t) => (
+                          <button
+                            key={t.id}
+                            onClick={() => setSelectedTemplate(t.id)}
+                            className={`p-2 rounded-lg text-center transition-all border ${
+                              selectedTemplate === t.id
+                                ? 'border-primary bg-primary/5 text-primary'
+                                : 'border-border bg-white text-text-secondary hover:border-primary/30'
+                            }`}
+                          >
+                            <div className="text-base mb-0.5">{t.emoji}</div>
+                            <div className="text-[9px] font-semibold">{t.name}</div>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <button
+                      onClick={handleMistoSlide}
+                      disabled={genLoading || !mistoSlideText || images.length >= 10}
+                      className="btn-ghost w-full justify-center text-xs py-2 border-primary/30 text-primary hover:bg-primary/5"
+                    >
+                      {genLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" strokeWidth={2} />}
+                      {genLoading ? 'Gerando...' : 'Adicionar Slide'}
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {images.length > 0 && (
                 <div className="text-center">
                   <span className="text-xs text-text-muted">
