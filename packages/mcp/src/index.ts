@@ -3,6 +3,7 @@ import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/
 import http from 'node:http';
 import { z } from 'zod';
 import { createPost } from './tools/createPost';
+import { createMixedCarousel } from './tools/createMixedCarousel';
 import { generateImage } from './tools/generateImage';
 import { generateCaption } from './tools/generateCaption';
 import { schedulePost } from './tools/schedulePost';
@@ -62,6 +63,28 @@ function registerTools(server: McpServer) {
     },
     async ({ post_id, image_prompt, image_url }) => {
       const result = await addImageToPost({ post_id, image_prompt, image_url });
+      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+    },
+  );
+
+  server.tool(
+    'create_mixed_carousel',
+    'Cria carrossel misto: capa gerada por IA (Gemini) + slides informativos em HTML/Template. Ideal para posts educativos com capa chamativa',
+    {
+      cover_prompt: z.string().describe('Prompt para gerar a imagem de capa via IA (primeiro slide)'),
+      slides: z.array(z.object({
+        title: z.string().describe('Texto principal do slide'),
+        subtitle: z.string().optional().describe('Subtitulo do slide'),
+        template: z.string().optional().describe('Template: bold-gradient, minimal-dark, neon-card, quote-elegant, stats-impact, split-color (padrao: bold-gradient)'),
+      })).min(1).max(9).describe('Lista de slides template (1-9 slides, a capa IA conta como slide 1)'),
+      caption: z.string().optional().describe('Legenda do post (gerada automaticamente se nao informada)'),
+      hashtags: z.array(z.string()).optional().describe('Lista de hashtags'),
+      aspect_ratio: z.enum(['1:1', '4:5', '9:16']).optional().describe('Proporcao: 1:1 (Feed), 4:5 (Retrato), 9:16 (Stories)'),
+      tone: z.string().optional().describe('Tom da legenda auto-gerada: educativo, inspirador, humor, noticia'),
+      scheduled_at: z.string().optional().describe('Data/hora para agendar (ISO 8601)'),
+    },
+    async ({ cover_prompt, slides, caption, hashtags, aspect_ratio, tone, scheduled_at }) => {
+      const result = await createMixedCarousel({ cover_prompt, slides, caption, hashtags, aspect_ratio, tone, scheduled_at });
       return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
     },
   );

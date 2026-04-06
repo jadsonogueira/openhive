@@ -16,7 +16,7 @@ Crie posts com imagens e legendas geradas por IA, agende publicacoes, extraia cl
 - **Funis de Vendas** - Construtor visual com drag and drop (React Flow)
 - **YouTube Clips** - Extraia melhores momentos, crie clips verticais com face cam e legendas
 - **Telegram Bot** - Crie e gerencie posts direto pelo Telegram
-- **MCP Server** - 27 tools pra usar com Claude, Gemini Antigravity, Cursor e outros
+- **MCP Server** - 28 tools pra usar com Claude, Gemini Antigravity, Cursor e outros
 - **Equipe** - Convide membros com permissoes por pagina
 - **Multi-Instagram** - Conecte varias contas do Instagram
 
@@ -49,7 +49,7 @@ Crie posts com imagens e legendas geradas por IA, agende publicacoes, extraia cl
 | `packages/api` | API REST (Express + Prisma + BullMQ) | 3001 |
 | `packages/web` | Frontend (Next.js 14 + Tailwind) | 3000 |
 | `packages/bot` | Telegram Bot (grammy.js) | - |
-| `packages/mcp` | MCP Server HTTP (27 tools) | 3002 |
+| `packages/mcp` | MCP Server HTTP (28 tools) | 3002 |
 | `packages/mcp-cli` | MCP CLI para IDEs externas (npm) | - |
 | `packages/shared` | Tipos TypeScript compartilhados | - |
 | `scripts/renderer` | HTML para PNG (Puppeteer) | 3003 |
@@ -221,7 +221,7 @@ O arquivo `docker-compose.production.yml` sobe **8 containers**:
 | `instapost-api` | API Express (backend) | 3001 |
 | `instapost-web` | Next.js (frontend) | 3000 |
 | `instapost-bot` | Telegram Bot | - |
-| `instapost-mcp` | MCP Server (27 tools) | 3002 |
+| `instapost-mcp` | MCP Server (28 tools) | 3002 |
 | `renderer` | Puppeteer (HTML para PNG) | 3003 |
 
 ### Passo a passo
@@ -335,7 +335,7 @@ Ao apontar o Coolify para este repositorio, ele usa o `docker-compose.prod.yml` 
 | `api` | API Express (backend) | 3001 |
 | `web` | Next.js (frontend) | 3000 |
 | `telegram-bot` | Telegram Bot | - |
-| `mcp-server` | MCP Server (27 tools) | 3002 |
+| `mcp-server` | MCP Server (28 tools) | 3002 |
 | `renderer` | Puppeteer (HTML para PNG) | 3003 |
 
 O Coolify cuida de: build das imagens, SSL automatico, dominios, restart e logs.
@@ -442,7 +442,7 @@ O Docker Compose (`docker-compose.prod.yml`) sobe **8 containers** automaticamen
 | `api` | API Express (backend) | 3001 |
 | `web` | Next.js (frontend) | 3000 |
 | `telegram-bot` | Telegram Bot | - |
-| `mcp-server` | MCP Server (27 tools) | 3002 |
+| `mcp-server` | MCP Server (28 tools) | 3002 |
 | `renderer` | Puppeteer (HTML para PNG) | 3003 |
 
 Voce nao precisa criar cada servico manualmente — o Docker Compose faz tudo.
@@ -710,7 +710,7 @@ TELEGRAM_ALLOWED_CHAT_IDS=                 # IDs dos chats permitidos
 
 ## Conectar MCP (IDEs e Agentes)
 
-O OpenHive expoe 27 tools via Model Context Protocol. Ha duas formas de conectar:
+O OpenHive expoe 28 tools via Model Context Protocol. Ha duas formas de conectar:
 
 ### Opcao 1: MCP Server HTTP (ja incluso no projeto)
 
@@ -865,6 +865,7 @@ O token e renovado automaticamente a cada 50 dias.
 |------|-----------|
 | `create_post` | Cria post ou carrossel (image_prompt, image_prompts, image_urls) |
 | `update_post` | Edita post (legenda, hashtags, reagendamento automatico) |
+| `create_mixed_carousel` | Carrossel misto: capa IA + slides HTML/Template |
 | `list_posts` | Lista posts com filtros |
 | `add_image_to_post` | Adiciona imagem a post existente (vira carrossel auto) |
 | `schedule_post` | Agenda publicacao |
