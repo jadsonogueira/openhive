@@ -21,6 +21,22 @@ function getGraphBase(token: string): string {
 }
 
 /**
+ * For IGAA tokens (Instagram Login API), the safest user identifier is the
+ * literal string "me" - the API resolves it from the token itself, so we
+ * don't need to worry about whether the stored igUserId is the correct one
+ * (Facebook Page ID, IG Business Account ID, or IG App-scoped ID).
+ *
+ * For EAA tokens (Facebook Business), we must use the actual IG Business
+ * Account ID linked to the Facebook Page.
+ */
+function resolveUserIdForToken(token: string, storedUserId: string): string {
+  if (token.startsWith('EAA')) {
+    return storedUserId; // Business token requires real IG Business Account ID
+  }
+  return 'me'; // Instagram Login token: use 'me' alias
+}
+
+/**
  * Retry a function on transient Instagram API errors (code 2, is_transient: true).
  * Uses exponential backoff: 5s, 15s, 30s
  */
@@ -107,8 +123,9 @@ async function pollContainerStatus(containerId: string, token: string, maxAttemp
 
 async function publishContainer(containerId: string, token: string, igUserId: string) {
   const base = getGraphBase(token);
-  console.log(`[Instagram] Publishing media via ${base}...`);
-  const publishRes = await fetch(`${base}/${igUserId}/media_publish`, {
+  const userPath = resolveUserIdForToken(token, igUserId);
+  console.log(`[Instagram] Publishing media via ${base}/${userPath}...`);
+  const publishRes = await fetch(`${base}/${userPath}/media_publish`, {
     method: 'POST',
     body: new URLSearchParams({
       creation_id: containerId,
@@ -128,7 +145,8 @@ async function publishContainer(containerId: string, token: string, igUserId: st
 
 async function createChildContainer(publicUrl: string, token: string, igUserId: string): Promise<string> {
   const base = getGraphBase(token);
-  const res = await fetch(`${base}/${igUserId}/media`, {
+  const userPath = resolveUserIdForToken(token, igUserId);
+  const res = await fetch(`${base}/${userPath}/media`, {
     method: 'POST',
     body: new URLSearchParams({
       image_url: publicUrl,
@@ -148,14 +166,15 @@ async function createChildContainer(publicUrl: string, token: string, igUserId: 
 async function publishSingleImage(imageUrl: string, caption: string, token: string, igUserId: string) {
   const publicImageUrl = await getPublicImageUrl(imageUrl);
   const base = getGraphBase(token);
+  const userPath = resolveUserIdForToken(token, igUserId);
 
   console.log('[Instagram] Creating single image container...');
-  console.log('[Instagram] Endpoint:', base);
-  console.log('[Instagram] User ID:', igUserId);
+  console.log('[Instagram] Endpoint:', `${base}/${userPath}`);
+  console.log('[Instagram] Stored User ID:', igUserId, '(using:', userPath, ')');
   console.log('[Instagram] Image URL:', publicImageUrl);
 
   const createData = await withRetry(async () => {
-    const createRes = await fetch(`${base}/${igUserId}/media`, {
+    const createRes = await fetch(`${base}/${userPath}/media`, {
       method: 'POST',
       body: new URLSearchParams({
         image_url: publicImageUrl,
@@ -216,8 +235,9 @@ async function publishCarousel(
 
   // Step 4: Create carousel container (children must be comma-separated)
   const base = getGraphBase(token);
+  const userPath = resolveUserIdForToken(token, igUserId);
   console.log('[Instagram] Creating carousel container...');
-  console.log('[Instagram] Endpoint:', base);
+  console.log('[Instagram] Endpoint:', `${base}/${userPath}`);
   console.log('[Instagram] Children IDs:', childContainerIds);
 
   const carouselData = await withRetry(async () => {
@@ -227,7 +247,7 @@ async function publishCarousel(
       caption,
       access_token: token,
     });
-    const carouselRes = await fetch(`${base}/${igUserId}/media`, {
+    const carouselRes = await fetch(`${base}/${userPath}/media`, {
       method: 'POST',
       body: params,
     });
@@ -256,10 +276,11 @@ async function publishVideoMedia(
   mode: VideoPublishMode = 'REELS',
 ) {
   const base = getGraphBase(token);
+  const userPath = resolveUserIdForToken(token, igUserId);
   console.log(`[Instagram] Publishing video as ${mode}...`);
-  console.log('[Instagram] Endpoint:', base);
+  console.log('[Instagram] Endpoint:', `${base}/${userPath}`);
   console.log('[Instagram] Token type:', token.startsWith('EAA') ? 'EAA (Facebook Business)' : 'IGAA (Instagram Login)');
-  console.log('[Instagram] User ID:', igUserId);
+  console.log('[Instagram] Stored User ID:', igUserId, '(using:', userPath, ')');
   console.log('[Instagram] Video URL:', videoUrl);
 
   // Step 1: Create media container - params differ per mode
@@ -282,7 +303,7 @@ async function publishVideoMedia(
 
     console.log('[Instagram] Create container params:', Array.from(params.keys()).join(', '));
 
-    const createRes = await fetch(`${base}/${igUserId}/media`, {
+    const createRes = await fetch(`${base}/${userPath}/media`, {
       method: 'POST',
       body: params,
     });
