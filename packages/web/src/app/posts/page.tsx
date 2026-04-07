@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { api } from '../../lib/api';
-import { Plus, Trash2, Send, Calendar, X, Loader2, FileText, Image as ImageIcon, Layers, ChevronLeft, ChevronRight, Pencil } from 'lucide-react';
+import { Plus, Trash2, Send, Calendar, X, Loader2, FileText, Image as ImageIcon, Layers, ChevronLeft, ChevronRight, Pencil, Video as VideoIcon, Film } from 'lucide-react';
 
 const STATUS_BADGE: Record<string, string> = {
   DRAFT: 'badge-draft',
@@ -169,7 +169,27 @@ export default function PostsList() {
               <tr key={post.id} className="hover:bg-bg-card-hover transition-colors">
                 <td className="px-5 py-4">
                   <div className="flex items-center gap-3">
-                    {post.imageUrl ? (
+                    {post.mediaType === 'VIDEO' && post.videoUrl ? (
+                      <div className="relative">
+                        <video
+                          src={post.videoUrl}
+                          className="w-11 h-11 rounded-thumb object-cover cursor-pointer hover:opacity-80 transition-opacity border border-border bg-black"
+                          muted
+                          playsInline
+                          onClick={() => { setSelectedPost(post); setCarouselIndex(0); }}
+                        />
+                        <div className="absolute -top-1 -right-1 w-5 h-5 bg-primary rounded-full flex items-center justify-center shadow-sm">
+                          <Film className="w-3 h-3 text-white" strokeWidth={2.5} />
+                        </div>
+                      </div>
+                    ) : post.mediaType === 'VIDEO' ? (
+                      <div className="relative w-11 h-11 rounded-thumb bg-bg-main flex items-center justify-center border border-border">
+                        <Film className="w-5 h-5 text-primary" strokeWidth={1.5} />
+                        <div className="absolute -top-1 -right-1 w-5 h-5 bg-primary rounded-full flex items-center justify-center shadow-sm">
+                          <Film className="w-3 h-3 text-white" strokeWidth={2.5} />
+                        </div>
+                      </div>
+                    ) : post.imageUrl ? (
                       <div className="relative">
                         <img
                           src={post.imageUrl}
@@ -190,6 +210,9 @@ export default function PostsList() {
                     )}
                     <div>
                       <p className="text-sm text-text-primary max-w-xs truncate">{post.caption || 'Sem legenda'}</p>
+                      {post.mediaType === 'VIDEO' && (
+                        <span className="text-[10px] text-primary font-semibold">REELS / VIDEO</span>
+                      )}
                       {post.isCarousel && post.images?.length > 0 && (
                         <span className="text-[10px] text-text-muted">{post.images.length} imagens</span>
                       )}
@@ -419,20 +442,43 @@ export default function PostsList() {
         </div>
       )}
 
-      {/* Full Image / Carousel Modal */}
+      {/* Full Image / Video / Carousel Modal */}
       {selectedPost && (() => {
-        const allImages = selectedPost.isCarousel && selectedPost.images?.length > 0
-          ? selectedPost.images.map((img: any) => img.imageUrl)
-          : [selectedPost.imageUrl].filter(Boolean);
+        const isVideo = selectedPost.mediaType === 'VIDEO';
+        const allImages = isVideo
+          ? []
+          : selectedPost.isCarousel && selectedPost.images?.length > 0
+            ? selectedPost.images.map((img: any) => img.imageUrl)
+            : [selectedPost.imageUrl].filter(Boolean);
         const isMulti = allImages.length > 1;
         return (
           <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 modal-backdrop" onClick={() => setSelectedPost(null)}>
             <div className="relative modal-content max-w-3xl w-full" onClick={(e) => e.stopPropagation()}>
-              <img
-                src={allImages[carouselIndex]}
-                alt={`Imagem ${carouselIndex + 1}`}
-                className="w-full max-h-[85vh] object-contain rounded-card shadow-2xl"
-              />
+              {isVideo ? (
+                selectedPost.videoUrl ? (
+                  <video
+                    src={selectedPost.videoUrl}
+                    className="w-full max-h-[85vh] object-contain rounded-card shadow-2xl bg-black"
+                    controls
+                    autoPlay
+                    playsInline
+                  />
+                ) : (
+                  <div className="w-full bg-bg-main rounded-card shadow-2xl p-16 text-center">
+                    <Film className="w-16 h-16 text-text-muted mx-auto mb-4" strokeWidth={1} />
+                    <p className="text-sm text-text-secondary">Video ja foi publicado e removido do storage</p>
+                    {selectedPost.instagramId && (
+                      <p className="text-xs text-text-muted mt-2">Instagram ID: {selectedPost.instagramId}</p>
+                    )}
+                  </div>
+                )
+              ) : (
+                <img
+                  src={allImages[carouselIndex]}
+                  alt={`Imagem ${carouselIndex + 1}`}
+                  className="w-full max-h-[85vh] object-contain rounded-card shadow-2xl"
+                />
+              )}
               <button onClick={() => setSelectedPost(null)} className="absolute -top-3 -right-3 w-8 h-8 bg-white rounded-full shadow-md flex items-center justify-center text-text-secondary hover:text-text-primary transition-colors z-10">
                 <X className="w-4 h-4" strokeWidth={2} />
               </button>

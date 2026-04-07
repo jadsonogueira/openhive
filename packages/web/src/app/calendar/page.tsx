@@ -258,7 +258,13 @@ export default function CalendarPage() {
                           </span>
                         </div>
                         <div className="flex items-start gap-3">
-                          {post.imageUrl && (
+                          {post.mediaType === 'VIDEO' && post.videoUrl ? (
+                            <video src={post.videoUrl} className="w-10 h-10 rounded-lg object-cover flex-shrink-0 bg-black" muted playsInline />
+                          ) : post.mediaType === 'VIDEO' ? (
+                            <div className="w-10 h-10 rounded-lg bg-bg-main flex items-center justify-center flex-shrink-0 border border-border">
+                              <span className="text-[8px] font-bold text-primary">REEL</span>
+                            </div>
+                          ) : post.imageUrl && (
                             <img src={post.imageUrl} alt="" className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />
                           )}
                           <div className="flex-1 min-w-0">
