@@ -253,9 +253,10 @@ export default function BrandsPage() {
 
       {/* Modal */}
       {modalOpen && (
-        <div className="fixed inset-0 bg-black/30 z-50 flex items-center justify-center p-4 modal-backdrop overflow-y-auto" onClick={() => setModalOpen(false)}>
-          <div className="bg-white rounded-card p-6 w-full max-w-2xl shadow-lg modal-content my-8" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-5">
+        <div className="fixed inset-0 bg-black/30 z-50 flex items-center justify-center p-4 modal-backdrop" onClick={() => setModalOpen(false)}>
+          <div className="bg-white rounded-card w-full max-w-4xl shadow-lg modal-content max-h-[90vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+            {/* Header (sticky) */}
+            <div className="flex items-center justify-between p-6 pb-4 border-b border-border">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-violet-50 flex items-center justify-center">
                   <Palette className="w-5 h-5 text-violet-600" strokeWidth={1.5} />
@@ -270,57 +271,58 @@ export default function BrandsPage() {
               </button>
             </div>
 
-            <div className="space-y-4">
-              {/* Name */}
-              <div>
-                <label className="block text-xs font-semibold text-text-secondary mb-1.5 uppercase tracking-wider">Nome do Brand</label>
-                <input
-                  value={editing.name || ''}
-                  onChange={(e) => setEditing({ ...editing, name: e.target.value })}
-                  placeholder="Ex: Buildix Lab"
-                  className="input-field"
-                />
-              </div>
-
-              {/* Logo upload */}
-              <div>
-                <label className="block text-xs font-semibold text-text-secondary mb-1.5 uppercase tracking-wider">Logo</label>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/png,image/jpeg,image/webp"
-                  className="hidden"
-                  onChange={(e) => { if (e.target.files?.[0]) handleLogoUpload(e.target.files[0]); e.target.value = ''; }}
-                />
-                <div className="flex items-center gap-3">
-                  {editing.logoUrl ? (
-                    <div className="relative">
-                      <img src={editing.logoUrl} alt="Logo" className="w-16 h-16 rounded-xl object-cover border border-border" />
-                      <button
-                        onClick={() => setEditing({ ...editing, logoUrl: '' })}
-                        className="absolute -top-1 -right-1 w-5 h-5 bg-white rounded-full shadow-md flex items-center justify-center"
-                      >
-                        <X className="w-3 h-3 text-text-muted" />
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="w-16 h-16 rounded-xl bg-bg-main border border-dashed border-border flex items-center justify-center">
-                      <ImageIcon className="w-6 h-6 text-text-muted" strokeWidth={1.5} />
-                    </div>
-                  )}
-                  <button
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={uploading}
-                    className="btn-ghost text-xs"
-                  >
-                    {uploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" strokeWidth={2} />}
-                    {uploading ? 'Enviando...' : editing.logoUrl ? 'Trocar logo' : 'Enviar logo'}
-                  </button>
+            {/* Body (scrollable) */}
+            <div className="overflow-y-auto px-6 py-5">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-5 gap-y-4">
+                {/* Name */}
+                <div>
+                  <label className="block text-xs font-semibold text-text-secondary mb-1.5 uppercase tracking-wider">Nome do Brand</label>
+                  <input
+                    value={editing.name || ''}
+                    onChange={(e) => setEditing({ ...editing, name: e.target.value })}
+                    placeholder="Ex: Buildix Lab"
+                    className="input-field"
+                  />
                 </div>
-              </div>
 
-              {/* Colors */}
-              <div className="grid grid-cols-2 gap-3">
+                {/* Logo upload */}
+                <div>
+                  <label className="block text-xs font-semibold text-text-secondary mb-1.5 uppercase tracking-wider">Logo</label>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp"
+                    className="hidden"
+                    onChange={(e) => { if (e.target.files?.[0]) handleLogoUpload(e.target.files[0]); e.target.value = ''; }}
+                  />
+                  <div className="flex items-center gap-3">
+                    {editing.logoUrl ? (
+                      <div className="relative">
+                        <img src={editing.logoUrl} alt="Logo" className="w-11 h-11 rounded-xl object-cover border border-border" />
+                        <button
+                          onClick={() => setEditing({ ...editing, logoUrl: '' })}
+                          className="absolute -top-1 -right-1 w-5 h-5 bg-white rounded-full shadow-md flex items-center justify-center"
+                        >
+                          <X className="w-3 h-3 text-text-muted" />
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="w-11 h-11 rounded-xl bg-bg-main border border-dashed border-border flex items-center justify-center">
+                        <ImageIcon className="w-5 h-5 text-text-muted" strokeWidth={1.5} />
+                      </div>
+                    )}
+                    <button
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={uploading}
+                      className="btn-ghost text-xs"
+                    >
+                      {uploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" strokeWidth={2} />}
+                      {uploading ? 'Enviando...' : editing.logoUrl ? 'Trocar logo' : 'Enviar logo'}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Cor Primaria */}
                 <div>
                   <label className="block text-xs font-semibold text-text-secondary mb-1.5 uppercase tracking-wider">Cor Primaria</label>
                   <div className="flex items-center gap-2">
@@ -338,6 +340,8 @@ export default function BrandsPage() {
                     />
                   </div>
                 </div>
+
+                {/* Cor Secundaria */}
                 <div>
                   <label className="block text-xs font-semibold text-text-secondary mb-1.5 uppercase tracking-wider">Cor Secundaria</label>
                   <div className="flex items-center gap-2">
@@ -355,92 +359,93 @@ export default function BrandsPage() {
                     />
                   </div>
                 </div>
-              </div>
 
-              {/* Description */}
-              <div>
-                <label className="block text-xs font-semibold text-text-secondary mb-1.5 uppercase tracking-wider">Descricao</label>
-                <textarea
-                  value={editing.description || ''}
-                  onChange={(e) => setEditing({ ...editing, description: e.target.value })}
-                  rows={2}
-                  placeholder="O que o brand faz? Quais sao seus diferenciais?"
-                  className="input-field resize-none"
-                />
-              </div>
+                {/* Tom de Voz */}
+                <div>
+                  <label className="block text-xs font-semibold text-text-secondary mb-1.5 uppercase tracking-wider">Tom de Voz</label>
+                  <input
+                    value={editing.voiceTone || ''}
+                    onChange={(e) => setEditing({ ...editing, voiceTone: e.target.value })}
+                    placeholder="Ex: profissional, descontraido, educativo"
+                    className="input-field"
+                  />
+                </div>
 
-              {/* Voice Tone */}
-              <div>
-                <label className="block text-xs font-semibold text-text-secondary mb-1.5 uppercase tracking-wider">Tom de Voz</label>
-                <input
-                  value={editing.voiceTone || ''}
-                  onChange={(e) => setEditing({ ...editing, voiceTone: e.target.value })}
-                  placeholder="Ex: profissional, descontraido, educativo"
-                  className="input-field"
-                />
-              </div>
+                {/* Site URL */}
+                <div>
+                  <label className="block text-xs font-semibold text-text-secondary mb-1.5 uppercase tracking-wider">Site (URL)</label>
+                  <input
+                    type="url"
+                    value={editing.websiteUrl || ''}
+                    onChange={(e) => setEditing({ ...editing, websiteUrl: e.target.value })}
+                    placeholder="https://meusite.com"
+                    className="input-field"
+                  />
+                  <p className="text-[10px] text-text-muted mt-1">Agentes de IA podem visitar essa URL para pesquisar informacoes do brand</p>
+                </div>
 
-              {/* Website URL */}
-              <div>
-                <label className="block text-xs font-semibold text-text-secondary mb-1.5 uppercase tracking-wider">Site (URL)</label>
-                <input
-                  type="url"
-                  value={editing.websiteUrl || ''}
-                  onChange={(e) => setEditing({ ...editing, websiteUrl: e.target.value })}
-                  placeholder="https://meusite.com"
-                  className="input-field"
-                />
-                <p className="text-[10px] text-text-muted mt-1">Agentes de IA podem visitar essa URL para pesquisar informacoes do brand</p>
-              </div>
+                {/* Instagram URL */}
+                <div>
+                  <label className="block text-xs font-semibold text-text-secondary mb-1.5 uppercase tracking-wider">Instagram (URL do perfil)</label>
+                  <input
+                    type="url"
+                    value={editing.instagramUrl || ''}
+                    onChange={(e) => setEditing({ ...editing, instagramUrl: e.target.value })}
+                    placeholder="https://instagram.com/seu_usuario"
+                    className="input-field"
+                  />
+                  <p className="text-[10px] text-text-muted mt-1">Agentes podem analisar o estilo do perfil para manter consistencia visual</p>
+                </div>
 
-              {/* Instagram URL */}
-              <div>
-                <label className="block text-xs font-semibold text-text-secondary mb-1.5 uppercase tracking-wider">Instagram (URL do perfil)</label>
-                <input
-                  type="url"
-                  value={editing.instagramUrl || ''}
-                  onChange={(e) => setEditing({ ...editing, instagramUrl: e.target.value })}
-                  placeholder="https://instagram.com/seu_usuario"
-                  className="input-field"
-                />
-                <p className="text-[10px] text-text-muted mt-1">Agentes podem analisar o estilo do perfil para manter consistencia visual</p>
-              </div>
+                {/* Produtos */}
+                <div>
+                  <label className="block text-xs font-semibold text-text-secondary mb-1.5 uppercase tracking-wider">Produtos / Servicos</label>
+                  <input
+                    value={productsText}
+                    onChange={(e) => setProductsText(e.target.value)}
+                    placeholder="Curso de IA, Mentoria (separados por virgula)"
+                    className="input-field"
+                  />
+                </div>
 
-              {/* Products */}
-              <div>
-                <label className="block text-xs font-semibold text-text-secondary mb-1.5 uppercase tracking-wider">Produtos / Servicos</label>
-                <input
-                  value={productsText}
-                  onChange={(e) => setProductsText(e.target.value)}
-                  placeholder="Curso de IA, Mentoria, Consultoria (separados por virgula)"
-                  className="input-field"
-                />
-              </div>
+                {/* Hashtags */}
+                <div>
+                  <label className="block text-xs font-semibold text-text-secondary mb-1.5 uppercase tracking-wider">Hashtags Padrao</label>
+                  <input
+                    value={hashtagsText}
+                    onChange={(e) => setHashtagsText(e.target.value)}
+                    placeholder="ia, tecnologia, programacao (separadas por virgula)"
+                    className="input-field"
+                  />
+                </div>
 
-              {/* Hashtags */}
-              <div>
-                <label className="block text-xs font-semibold text-text-secondary mb-1.5 uppercase tracking-wider">Hashtags Padrao</label>
-                <input
-                  value={hashtagsText}
-                  onChange={(e) => setHashtagsText(e.target.value)}
-                  placeholder="ia, tecnologia, programacao (separadas por virgula)"
-                  className="input-field"
-                />
-              </div>
+                {/* Descricao - ocupa 2 colunas */}
+                <div className="md:col-span-2">
+                  <label className="block text-xs font-semibold text-text-secondary mb-1.5 uppercase tracking-wider">Descricao</label>
+                  <textarea
+                    value={editing.description || ''}
+                    onChange={(e) => setEditing({ ...editing, description: e.target.value })}
+                    rows={3}
+                    placeholder="O que o brand faz? Quais sao seus diferenciais?"
+                    className="input-field resize-none"
+                  />
+                </div>
 
-              {/* Default toggle */}
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={editing.isDefault || false}
-                  onChange={(e) => setEditing({ ...editing, isDefault: e.target.checked })}
-                  className="w-4 h-4 rounded text-primary"
-                />
-                <span className="text-sm text-text-secondary">Definir como brand padrao</span>
-              </label>
+                {/* Default toggle - ocupa 2 colunas */}
+                <label className="md:col-span-2 flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={editing.isDefault || false}
+                    onChange={(e) => setEditing({ ...editing, isDefault: e.target.checked })}
+                    className="w-4 h-4 rounded text-primary"
+                  />
+                  <span className="text-sm text-text-secondary">Definir como brand padrao</span>
+                </label>
+              </div>
             </div>
 
-            <div className="flex gap-2 justify-end mt-6 pt-4 border-t border-border">
+            {/* Footer (sticky) */}
+            <div className="flex gap-2 justify-end p-6 pt-4 border-t border-border">
               <button onClick={() => setModalOpen(false)} className="btn-ghost text-xs">Cancelar</button>
               <button onClick={handleSave} disabled={saving} className="btn-cta text-xs">
                 {saving ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Salvando...</> : 'Salvar Brand'}
