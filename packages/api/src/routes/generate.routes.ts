@@ -3,8 +3,9 @@ import { z } from 'zod';
 import { authMiddleware, AuthRequest } from '../middleware/auth.middleware';
 import { validate } from '../middleware/validate';
 import { generateImageController, generateCaptionController } from '../controllers/generate.controller';
-import { renderTemplateToImage, renderHtmlToImage } from '../services/template-renderer.service';
+import { renderTemplateToImage, renderHtmlToImage, renderComposedToImage } from '../services/template-renderer.service';
 import { TEMPLATES } from '../services/templates';
+import { generateImage } from '../services/nanobana.service';
 import { prisma } from '../config/database';
 import { resolveOwnerId } from '../helpers/resolveOwnerId';
 
@@ -102,6 +103,98 @@ router.post('/html', validate(htmlSchema), async (req: AuthRequest, res: Respons
     res.json({ success: true, data: result });
   } catch (err: any) {
     res.status(500).json({ success: false, error: err?.message || 'Failed to render HTML' });
+  }
+});
+
+// Composed image: AI background + HTML/Tailwind overlay
+const composedSchema = z.object({
+  html: z.string().min(1),
+  // Either provide a prompt to generate the background OR a ready URL
+  backgroundPrompt: z.string().optional(),
+  backgroundUrl: z.string().url().optional(),
+  aspectRatio: z.enum(['1:1', '9:16', '4:5']).optional(),
+  overlayOpacity: z.number().min(0).max(1).optional(),
+  // Brand integration
+  brandId: z.string().optional(),
+  applyBrand: z.boolean().optional(),
+}).refine((data) => data.backgroundPrompt || data.backgroundUrl, {
+  message: 'Either backgroundPrompt or backgroundUrl is required',
+});
+
+function getSizeFromAspect(ar?: string): { width: number; height: number } {
+  switch (ar) {
+    case '9:16': return { width: 1080, height: 1920 };
+    case '4:5': return { width: 1080, height: 1350 };
+    default: return { width: 1080, height: 1080 };
+  }
+}
+
+router.post('/composed', validate(composedSchema), async (req: AuthRequest, res: Response) => {
+  try {
+    const { html, backgroundPrompt, backgroundUrl, aspectRatio, overlayOpacity, brandId, applyBrand } = req.body;
+    const { width, height } = getSizeFromAspect(aspectRatio);
+
+    // Step 1: Resolve background URL (generate via AI if prompt was given)
+    let bgUrl = backgroundUrl as string | undefined;
+    if (!bgUrl && backgroundPrompt) {
+      console.log('[composed] Generating AI background:', backgroundPrompt);
+      const bg = await generateImage({ prompt: backgroundPrompt, aspectRatio });
+      bgUrl = bg.imageUrl;
+    }
+    if (!bgUrl) {
+      res.status(400).json({ success: false, error: 'No background available' });
+      return;
+    }
+
+    // Step 2: Resolve brand fields if requested
+    let brandPrimaryColor: string | undefined;
+    let brandSecondaryColor: string | undefined;
+    let brandAccentColor: string | undefined;
+    let brandTextColor: string | undefined;
+    let brandFontFamily: string | undefined;
+    let brandHeadingFont: string | undefined;
+    let brandBodyFont: string | undefined;
+    let brandLogoUrl: string | undefined;
+    let brandName: string | undefined;
+
+    if (brandId && applyBrand !== false) {
+      const userId = await resolveOwnerId(req.userId!);
+      const brand = await prisma.brand.findFirst({ where: { id: brandId, userId } });
+      if (brand) {
+        brandPrimaryColor = brand.primaryColor;
+        brandSecondaryColor = brand.secondaryColor;
+        brandAccentColor = brand.accentColor || undefined;
+        brandTextColor = brand.textColor || undefined;
+        brandFontFamily = brand.fontFamily || undefined;
+        brandHeadingFont = brand.headingFont || undefined;
+        brandBodyFont = brand.bodyFont || undefined;
+        brandLogoUrl = brand.logoUrl || undefined;
+        brandName = brand.name;
+      }
+    }
+
+    // Step 3: Compose
+    const result = await renderComposedToImage({
+      backgroundUrl: bgUrl,
+      html,
+      width,
+      height,
+      overlayOpacity,
+      brandPrimaryColor,
+      brandSecondaryColor,
+      brandAccentColor,
+      brandTextColor,
+      brandFontFamily,
+      brandHeadingFont,
+      brandBodyFont,
+      brandLogoUrl,
+      brandName,
+    });
+
+    res.json({ success: true, data: { ...result, backgroundUrl: bgUrl } });
+  } catch (err: any) {
+    console.error('[composed] error:', err);
+    res.status(500).json({ success: false, error: err?.message || 'Failed to render composed image' });
   }
 });
 

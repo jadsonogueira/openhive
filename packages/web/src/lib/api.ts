@@ -284,6 +284,21 @@ export const api = {
   generateTemplate: (body: { title: string; subtitle?: string; body?: string; accent?: string; template?: string; aspectRatio?: string }) =>
     request<{ imageUrl: string }>('/api/generate/template', { method: 'POST', body: JSON.stringify(body) }),
 
+  // Composed image: AI background + HTML overlay
+  generateComposed: (body: {
+    html: string;
+    backgroundPrompt?: string;
+    backgroundUrl?: string;
+    aspectRatio?: string;
+    overlayOpacity?: number;
+    brandId?: string;
+    applyBrand?: boolean;
+  }) =>
+    request<{ imageUrl: string; backgroundUrl?: string }>('/api/generate/composed', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+
   // Brands
   listBrands: () => request<{ items: any[]; total: number }>('/api/brands'),
   getBrand: (id: string) => request<any>(`/api/brands/${id}`),

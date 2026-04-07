@@ -245,7 +245,7 @@ export default function SettingsPage() {
                 </div>
               </div>
               <p className="text-[11px] text-text-muted mt-2">
-                39 tools disponiveis: posts, brands, design systems (58 inspiracoes), carrossel misto, tarefas, projetos, modulos, imagens, legendas, templates HTML, video clips
+                40 tools disponiveis: posts, brands, design systems (58 inspiracoes), carrossel misto, imagem composta (IA + HTML), tarefas, projetos, modulos, imagens, legendas, templates HTML, video clips
               </p>
 
               {/* MCP Token */}
@@ -284,7 +284,7 @@ export default function SettingsPage() {
                           mcpServers: {
                             openhive: {
                               command: 'npx',
-                              args: ['-y', 'openhive-mcp-server@1.5.0'],
+                              args: ['-y', 'openhive-mcp-server@1.6.0'],
                               env: {
                                 OPENHIVE_API_URL: apiUrl || 'https://api.seu-servidor.com',
                                 OPENHIVE_API_TOKEN: settings['MCP_TOKEN']?.value || 'seu-token-aqui',
@@ -310,7 +310,7 @@ export default function SettingsPage() {
     mcpServers: {
       openhive: {
         command: 'npx',
-        args: ['-y', 'openhive-mcp-server@1.5.0'],
+        args: ['-y', 'openhive-mcp-server@1.6.0'],
         env: {
           OPENHIVE_API_URL: apiUrl || 'https://api.seu-servidor.com',
           OPENHIVE_API_TOKEN: settings['MCP_TOKEN']?.value || 'seu-token-aqui',

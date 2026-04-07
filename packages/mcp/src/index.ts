@@ -19,6 +19,7 @@ import {
   listDesignSystemCategories,
   suggestBrandFromInspirations,
 } from './tools/designSystems';
+import { composeImageWithOverlay } from './tools/composeImageWithOverlay';
 import { generateImage } from './tools/generateImage';
 import { generateCaption } from './tools/generateCaption';
 import { schedulePost } from './tools/schedulePost';
@@ -625,6 +626,24 @@ function registerTools(server: McpServer) {
     },
     async (input) => {
       const result = await renderHtmlToImage(input);
+      return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
+    },
+  );
+
+  server.tool(
+    'compose_image_with_html_overlay',
+    'Combina imagem de fundo (gerada por IA OU URL pronta) + overlay HTML/Tailwind por cima. O background fica como background-image full-screen e o HTML do usuario e renderizado por cima. Aceita brand_id para injetar CSS variables (--brand-primary, --brand-secondary, --brand-accent, --brand-text, --brand-font) e o logo no canto. Retorna image_url pronto para usar em create_post ou add_image_to_post',
+    {
+      html: z.string().describe('HTML do overlay (corpo apenas, sem <html><head>). Suporta Tailwind via CDN. Use as CSS variables var(--brand-primary), var(--brand-secondary), var(--brand-accent), var(--brand-text) quando brand_id for fornecido'),
+      background_prompt: z.string().optional().describe('Prompt para gerar a imagem de fundo via IA (Gemini). Ex: "fundo abstrato com formas geometricas roxas". Use OU isto OU background_url'),
+      background_url: z.string().optional().describe('URL de imagem ja pronta para usar como fundo. Use OU isto OU background_prompt'),
+      aspect_ratio: z.enum(['1:1', '4:5', '9:16']).optional().describe('Proporcao: 1:1 (Feed), 4:5 (Retrato), 9:16 (Stories/Reels)'),
+      overlay_opacity: z.number().min(0).max(1).optional().describe('Opacidade da camada escura entre fundo e HTML (0-1, default: 0). Use 0.4-0.6 quando o fundo e claro e os textos sao brancos'),
+      brand_id: z.string().optional().describe('ID do brand para injetar cores como CSS variables e logo no canto. Use list_brands para descobrir IDs'),
+      apply_brand: z.boolean().optional().describe('Se true (padrao quando brand_id e fornecido), aplica brand. Se false, ignora mesmo com brand_id'),
+    },
+    async (input) => {
+      const result = await composeImageWithOverlay(input);
       return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
     },
   );

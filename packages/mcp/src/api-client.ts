@@ -160,4 +160,11 @@ export const api = {
   // HTML to image rendering
   renderHtml: (body: Record<string, unknown>) =>
     request<{ imageUrl: string }>('/api/generate/html', { method: 'POST', body: JSON.stringify(body) }),
+
+  // Composed: AI background + HTML/Tailwind overlay
+  generateComposed: (body: Record<string, unknown>) =>
+    request<{ imageUrl: string; backgroundUrl?: string }>('/api/generate/composed', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
 };

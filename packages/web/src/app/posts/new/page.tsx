@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { api } from '../../../lib/api';
 import { Zap, Image as ImageIcon, Edit3, Clock, Send, Save, Loader2, X, Heart, MessageCircle, Share, ChevronLeft, ChevronRight, Layers, Plus, Trash2, Upload, FileText, Link as LinkIcon } from 'lucide-react';
@@ -36,11 +36,16 @@ export default function NewPost() {
   const [postFile, setPostFile] = useState({ url: '', name: '' });
   const [fileUploading, setFileUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [genMode, setGenMode] = useState<'ai' | 'template' | 'misto'>('ai');
+  const [genMode, setGenMode] = useState<'ai' | 'template' | 'misto' | 'composed'>('ai');
   const [selectedTemplate, setSelectedTemplate] = useState('bold-gradient');
   const [templateSubtitle, setTemplateSubtitle] = useState('');
   const [mistoSlideText, setMistoSlideText] = useState('');
   const [mistoSlideSubtitle, setMistoSlideSubtitle] = useState('');
+  const [composedBgPrompt, setComposedBgPrompt] = useState('');
+  const [composedHtml, setComposedHtml] = useState('');
+  const [composedOverlayOpacity, setComposedOverlayOpacity] = useState(0.4);
+  const [composedBrandId, setComposedBrandId] = useState<string>('');
+  const [availableBrands, setAvailableBrands] = useState<any[]>([]);
 
   const TEMPLATES = [
     { id: 'bold-gradient', name: 'Gradiente Bold', emoji: '🟣' },
@@ -50,6 +55,47 @@ export default function NewPost() {
     { id: 'stats-impact', name: 'Impacto', emoji: '📊' },
     { id: 'split-color', name: 'Split', emoji: '🎨' },
   ];
+
+  useEffect(() => {
+    api.listBrands()
+      .then((r: any) => {
+        setAvailableBrands(r.items || []);
+        const def = (r.items || []).find((b: any) => b.isDefault);
+        if (def) setComposedBrandId(def.id);
+      })
+      .catch(() => { /* ignore */ });
+  }, []);
+
+  async function handleGenerateComposed() {
+    if (!composedHtml.trim()) {
+      setMessage('HTML do overlay e obrigatorio');
+      setMessageType('error');
+      return;
+    }
+    if (!composedBgPrompt.trim()) {
+      setMessage('Prompt do fundo e obrigatorio');
+      setMessageType('error');
+      return;
+    }
+    setGenLoading(true);
+    setMessage('');
+    try {
+      const result = await api.generateComposed({
+        html: composedHtml,
+        backgroundPrompt: composedBgPrompt,
+        aspectRatio,
+        overlayOpacity: composedOverlayOpacity,
+        brandId: composedBrandId || undefined,
+        applyBrand: !!composedBrandId,
+      });
+      setImages((prev) => [...prev, { url: result.imageUrl, prompt: composedBgPrompt }]);
+      setActiveImageIndex(images.length);
+    } catch (err: any) {
+      setMessage(err.message || 'Erro ao gerar imagem composta');
+      setMessageType('error');
+    }
+    setGenLoading(false);
+  }
 
   async function handleGenerateTemplate() {
     if (!prompt) return;
@@ -254,7 +300,7 @@ export default function NewPost() {
                 </div>
                 <h2 className="text-sm font-bold text-text-primary">Gerar Imagem</h2>
               </div>
-              <div className="flex items-center bg-bg-main rounded-lg p-0.5">
+              <div className="flex items-center bg-bg-main rounded-lg p-0.5 flex-wrap">
                 <button
                   onClick={() => setGenMode('ai')}
                   className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${genMode === 'ai' ? 'bg-white text-primary shadow-sm' : 'text-text-muted hover:text-text-primary'}`}
@@ -273,11 +319,17 @@ export default function NewPost() {
                 >
                   Misto
                 </button>
+                <button
+                  onClick={() => setGenMode('composed')}
+                  className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${genMode === 'composed' ? 'bg-white text-primary shadow-sm' : 'text-text-muted hover:text-text-primary'}`}
+                >
+                  HTML + IA
+                </button>
               </div>
             </div>
             <div className="space-y-3">
               {/* Shared: Prompt/Title field (AI and Template modes) */}
-              {genMode !== 'misto' && (
+              {genMode !== 'misto' && genMode !== 'composed' && (
                 <div>
                   <label className="block text-xs font-semibold text-text-secondary mb-1.5 uppercase tracking-wider">
                     {genMode === 'ai' ? 'Prompt' : 'Texto Principal'}
@@ -469,6 +521,100 @@ export default function NewPost() {
                       {genLoading ? 'Gerando...' : 'Adicionar Slide'}
                     </button>
                   </div>
+                </div>
+              )}
+
+              {/* Composed mode: AI background + HTML/Tailwind overlay */}
+              {genMode === 'composed' && (
+                <div className="space-y-4">
+                  <p className="text-[11px] text-text-muted bg-bg-main rounded-lg px-3 py-2">
+                    Imagem de fundo gerada por IA + overlay HTML/Tailwind por cima.
+                    Use as variaveis CSS do brand: <code className="text-primary">var(--brand-primary)</code>, <code className="text-primary">var(--brand-secondary)</code>, <code className="text-primary">var(--brand-accent)</code>.
+                  </p>
+
+                  {/* Background prompt */}
+                  <div>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <label className="text-xs font-semibold text-text-secondary uppercase tracking-wider">Prompt do fundo (IA)</label>
+                      <button
+                        type="button"
+                        onClick={() => setComposedBgPrompt(prompt)}
+                        disabled={!prompt}
+                        className="text-[10px] text-primary hover:underline disabled:opacity-30 disabled:no-underline"
+                      >
+                        Usar prompt do post
+                      </button>
+                    </div>
+                    <textarea
+                      value={composedBgPrompt}
+                      onChange={(e) => setComposedBgPrompt(e.target.value)}
+                      placeholder="Ex: 'Fundo abstrato com formas geometricas roxas e gradiente, estilo moderno'"
+                      rows={2}
+                      className="input-field resize-none"
+                    />
+                  </div>
+
+                  {/* HTML overlay */}
+                  <div>
+                    <label className="block text-xs font-semibold text-text-secondary mb-1.5 uppercase tracking-wider">HTML do overlay</label>
+                    <textarea
+                      value={composedHtml}
+                      onChange={(e) => setComposedHtml(e.target.value)}
+                      placeholder={`<div class="flex items-center justify-center w-full h-full p-16">
+  <h1 class="text-7xl font-black text-white text-center" style="text-shadow: 0 4px 30px rgba(0,0,0,0.6);">
+    Seu titulo
+  </h1>
+</div>`}
+                      rows={8}
+                      className="input-field resize-none font-mono text-[11px]"
+                    />
+                    <p className="text-[10px] text-text-muted mt-1">Tailwind CSS disponivel via CDN. Use absolute, flex, grid, classes utilitarias.</p>
+                  </div>
+
+                  {/* Brand selector */}
+                  {availableBrands.length > 0 && (
+                    <div>
+                      <label className="block text-xs font-semibold text-text-secondary mb-1.5 uppercase tracking-wider">Aplicar Brand (cores + logo)</label>
+                      <select
+                        value={composedBrandId}
+                        onChange={(e) => setComposedBrandId(e.target.value)}
+                        className="input-field"
+                      >
+                        <option value="">Nenhum (HTML puro)</option>
+                        {availableBrands.map((b) => (
+                          <option key={b.id} value={b.id}>
+                            {b.name} {b.isDefault ? '(padrao)' : ''}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+
+                  {/* Overlay opacity */}
+                  <div>
+                    <label className="block text-xs font-semibold text-text-secondary mb-1.5 uppercase tracking-wider">
+                      Escurecer fundo: {Math.round(composedOverlayOpacity * 100)}%
+                    </label>
+                    <input
+                      type="range"
+                      min={0}
+                      max={1}
+                      step={0.05}
+                      value={composedOverlayOpacity}
+                      onChange={(e) => setComposedOverlayOpacity(Number(e.target.value))}
+                      className="w-full"
+                    />
+                    <p className="text-[10px] text-text-muted">Camada escura entre fundo e HTML para textos brancos ficarem legiveis</p>
+                  </div>
+
+                  <button
+                    onClick={handleGenerateComposed}
+                    disabled={genLoading || !composedHtml || !composedBgPrompt}
+                    className="btn-cta w-full justify-center text-xs py-2.5"
+                  >
+                    {genLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" strokeWidth={1.5} />}
+                    {genLoading ? 'Gerando fundo + compondo...' : 'Gerar Imagem Composta'}
+                  </button>
                 </div>
               )}
 
