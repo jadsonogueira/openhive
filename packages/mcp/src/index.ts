@@ -253,14 +253,19 @@ function registerTools(server: McpServer) {
 
   server.tool(
     'create_brand',
-    'Cria um novo brand com identidade visual',
+    'Cria um novo brand com identidade visual completa: 6 cores (primary, secondary, accent, background, text, muted) + 3 fontes (display, heading, body)',
     {
       name: z.string().describe('Nome do brand'),
       logo_url: z.string().optional().describe('URL do logo'),
-      primary_color: z.string().optional().describe('Cor primaria em hex (#RRGGBB)'),
-      secondary_color: z.string().optional().describe('Cor secundaria em hex (#RRGGBB)'),
-      accent_color: z.string().optional().describe('Cor de destaque em hex'),
-      font_family: z.string().optional().describe('Familia de fonte preferida'),
+      primary_color: z.string().optional().describe('Cor primaria em hex (#RRGGBB) - cor principal da marca'),
+      secondary_color: z.string().optional().describe('Cor secundaria em hex - cor de apoio'),
+      accent_color: z.string().optional().describe('Cor de destaque em hex - usada em CTAs e highlights'),
+      background_color: z.string().optional().describe('Cor de fundo em hex - cor base dos slides'),
+      text_color: z.string().optional().describe('Cor de texto principal em hex'),
+      muted_color: z.string().optional().describe('Cor neutra/muted em hex - bordas, textos secundarios'),
+      font_family: z.string().optional().describe('Familia de fonte display/principal (ex: Inter Variable)'),
+      heading_font: z.string().optional().describe('Fonte para titulos (ex: Sora, Geist)'),
+      body_font: z.string().optional().describe('Fonte para textos longos/body (ex: Inter)'),
       description: z.string().optional().describe('Descricao do brand'),
       voice_tone: z.string().optional().describe('Tom de voz: profissional, descontraido, educativo, etc'),
       website_url: z.string().optional().describe('URL do site oficial do brand - agentes podem visitar para pesquisar informacoes e contexto'),
@@ -277,7 +282,7 @@ function registerTools(server: McpServer) {
 
   server.tool(
     'update_brand',
-    'Atualiza um brand existente',
+    'Atualiza um brand existente. Todos os campos sao opcionais - so envie o que quer mudar',
     {
       brand_id: z.string().describe('ID do brand'),
       name: z.string().optional(),
@@ -285,7 +290,12 @@ function registerTools(server: McpServer) {
       primary_color: z.string().optional(),
       secondary_color: z.string().optional(),
       accent_color: z.string().optional(),
+      background_color: z.string().optional(),
+      text_color: z.string().optional(),
+      muted_color: z.string().optional(),
       font_family: z.string().optional(),
+      heading_font: z.string().optional(),
+      body_font: z.string().optional(),
       description: z.string().optional(),
       voice_tone: z.string().optional(),
       website_url: z.string().optional(),

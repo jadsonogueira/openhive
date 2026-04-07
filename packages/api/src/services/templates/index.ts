@@ -5,6 +5,12 @@ export interface TemplateInput {
   accent?: string;
   primaryColor?: string;
   secondaryColor?: string;
+  backgroundColor?: string;
+  textColor?: string;
+  mutedColor?: string;
+  fontFamily?: string;
+  headingFont?: string;
+  bodyFont?: string;
   logoUrl?: string;
   brandName?: string;
   template: string;

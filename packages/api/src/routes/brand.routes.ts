@@ -14,13 +14,20 @@ import {
 
 const router = Router();
 
+const hexColor = z.string().regex(/^#[0-9A-Fa-f]{6}$/);
+
 const createBrandSchema = z.object({
   name: z.string().min(1).max(100),
   logoUrl: z.string().url().optional().nullable(),
-  primaryColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/).optional(),
-  secondaryColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/).optional(),
-  accentColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/).optional().nullable(),
+  primaryColor: hexColor.optional(),
+  secondaryColor: hexColor.optional(),
+  accentColor: hexColor.optional().nullable(),
+  backgroundColor: hexColor.optional().nullable(),
+  textColor: hexColor.optional().nullable(),
+  mutedColor: hexColor.optional().nullable(),
   fontFamily: z.string().max(100).optional().nullable(),
+  headingFont: z.string().max(100).optional().nullable(),
+  bodyFont: z.string().max(100).optional().nullable(),
   description: z.string().max(2000).optional().nullable(),
   voiceTone: z.string().max(500).optional().nullable(),
   websiteUrl: z.string().url().optional().nullable().or(z.literal('')),

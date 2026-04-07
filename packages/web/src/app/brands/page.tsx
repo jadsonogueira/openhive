@@ -11,7 +11,12 @@ interface Brand {
   primaryColor: string;
   secondaryColor: string;
   accentColor?: string | null;
+  backgroundColor?: string | null;
+  textColor?: string | null;
+  mutedColor?: string | null;
   fontFamily?: string | null;
+  headingFont?: string | null;
+  bodyFont?: string | null;
   description?: string | null;
   voiceTone?: string | null;
   websiteUrl?: string | null;
@@ -27,7 +32,12 @@ const EMPTY_BRAND: Partial<Brand> = {
   primaryColor: '#6C5CE7',
   secondaryColor: '#E84393',
   accentColor: '',
+  backgroundColor: '',
+  textColor: '',
+  mutedColor: '',
   fontFamily: '',
+  headingFont: '',
+  bodyFont: '',
   description: '',
   voiceTone: '',
   websiteUrl: '',
@@ -94,7 +104,12 @@ export default function BrandsPage() {
         primaryColor: editing.primaryColor,
         secondaryColor: editing.secondaryColor,
         accentColor: editing.accentColor || null,
+        backgroundColor: editing.backgroundColor || null,
+        textColor: editing.textColor || null,
+        mutedColor: editing.mutedColor || null,
         fontFamily: editing.fontFamily || null,
+        headingFont: editing.headingFont || null,
+        bodyFont: editing.bodyFont || null,
         description: editing.description || null,
         voiceTone: editing.voiceTone || null,
         websiteUrl: editing.websiteUrl || null,
@@ -272,176 +287,214 @@ export default function BrandsPage() {
             </div>
 
             {/* Body (scrollable) */}
-            <div className="overflow-y-auto px-6 py-5">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-5 gap-y-4">
-                {/* Name */}
-                <div>
-                  <label className="block text-xs font-semibold text-text-secondary mb-1.5 uppercase tracking-wider">Nome do Brand</label>
-                  <input
-                    value={editing.name || ''}
-                    onChange={(e) => setEditing({ ...editing, name: e.target.value })}
-                    placeholder="Ex: Buildix Lab"
-                    className="input-field"
-                  />
-                </div>
+            <div className="overflow-y-auto px-6 py-5 space-y-6">
+              {/* Section: Basico */}
+              <section>
+                <h4 className="text-[11px] font-bold text-text-muted uppercase tracking-wider mb-3">Basico</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-5 gap-y-4">
+                  {/* Name */}
+                  <div>
+                    <label className="block text-xs font-semibold text-text-secondary mb-1.5 uppercase tracking-wider">Nome do Brand</label>
+                    <input
+                      value={editing.name || ''}
+                      onChange={(e) => setEditing({ ...editing, name: e.target.value })}
+                      placeholder="Ex: Buildix Lab"
+                      className="input-field"
+                    />
+                  </div>
 
-                {/* Logo upload */}
-                <div>
-                  <label className="block text-xs font-semibold text-text-secondary mb-1.5 uppercase tracking-wider">Logo</label>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/png,image/jpeg,image/webp"
-                    className="hidden"
-                    onChange={(e) => { if (e.target.files?.[0]) handleLogoUpload(e.target.files[0]); e.target.value = ''; }}
-                  />
-                  <div className="flex items-center gap-3">
-                    {editing.logoUrl ? (
-                      <div className="relative">
-                        <img src={editing.logoUrl} alt="Logo" className="w-11 h-11 rounded-xl object-cover border border-border" />
-                        <button
-                          onClick={() => setEditing({ ...editing, logoUrl: '' })}
-                          className="absolute -top-1 -right-1 w-5 h-5 bg-white rounded-full shadow-md flex items-center justify-center"
-                        >
-                          <X className="w-3 h-3 text-text-muted" />
-                        </button>
+                  {/* Logo upload */}
+                  <div>
+                    <label className="block text-xs font-semibold text-text-secondary mb-1.5 uppercase tracking-wider">Logo</label>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/png,image/jpeg,image/webp"
+                      className="hidden"
+                      onChange={(e) => { if (e.target.files?.[0]) handleLogoUpload(e.target.files[0]); e.target.value = ''; }}
+                    />
+                    <div className="flex items-center gap-3">
+                      {editing.logoUrl ? (
+                        <div className="relative">
+                          <img src={editing.logoUrl} alt="Logo" className="w-11 h-11 rounded-xl object-cover border border-border" />
+                          <button
+                            onClick={() => setEditing({ ...editing, logoUrl: '' })}
+                            className="absolute -top-1 -right-1 w-5 h-5 bg-white rounded-full shadow-md flex items-center justify-center"
+                          >
+                            <X className="w-3 h-3 text-text-muted" />
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="w-11 h-11 rounded-xl bg-bg-main border border-dashed border-border flex items-center justify-center">
+                          <ImageIcon className="w-5 h-5 text-text-muted" strokeWidth={1.5} />
+                        </div>
+                      )}
+                      <button
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={uploading}
+                        className="btn-ghost text-xs"
+                      >
+                        {uploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" strokeWidth={2} />}
+                        {uploading ? 'Enviando...' : editing.logoUrl ? 'Trocar logo' : 'Enviar logo'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              {/* Section: Cores */}
+              <section>
+                <h4 className="text-[11px] font-bold text-text-muted uppercase tracking-wider mb-3">Cores</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-5 gap-y-4">
+                  {[
+                    { key: 'primaryColor', label: 'Primaria', placeholder: '#6C5CE7', def: '#6C5CE7' },
+                    { key: 'secondaryColor', label: 'Secundaria', placeholder: '#E84393', def: '#E84393' },
+                    { key: 'accentColor', label: 'Accent', placeholder: '#FFC107', def: '#FFC107' },
+                    { key: 'backgroundColor', label: 'Fundo', placeholder: '#FFFFFF', def: '#FFFFFF' },
+                    { key: 'textColor', label: 'Texto', placeholder: '#1A1A1A', def: '#1A1A1A' },
+                    { key: 'mutedColor', label: 'Neutro', placeholder: '#9CA3AF', def: '#9CA3AF' },
+                  ].map(({ key, label, placeholder, def }) => {
+                    const value = (editing as any)[key] || '';
+                    return (
+                      <div key={key}>
+                        <label className="block text-xs font-semibold text-text-secondary mb-1.5 uppercase tracking-wider">{label}</label>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="color"
+                            value={value || def}
+                            onChange={(e) => setEditing({ ...editing, [key]: e.target.value })}
+                            className="w-12 h-10 rounded-lg border border-border cursor-pointer flex-shrink-0"
+                          />
+                          <input
+                            value={value}
+                            onChange={(e) => setEditing({ ...editing, [key]: e.target.value })}
+                            placeholder={placeholder}
+                            className="input-field font-mono text-xs"
+                          />
+                        </div>
                       </div>
-                    ) : (
-                      <div className="w-11 h-11 rounded-xl bg-bg-main border border-dashed border-border flex items-center justify-center">
-                        <ImageIcon className="w-5 h-5 text-text-muted" strokeWidth={1.5} />
-                      </div>
-                    )}
-                    <button
-                      onClick={() => fileInputRef.current?.click()}
-                      disabled={uploading}
-                      className="btn-ghost text-xs"
-                    >
-                      {uploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" strokeWidth={2} />}
-                      {uploading ? 'Enviando...' : editing.logoUrl ? 'Trocar logo' : 'Enviar logo'}
-                    </button>
-                  </div>
+                    );
+                  })}
                 </div>
+              </section>
 
-                {/* Cor Primaria */}
-                <div>
-                  <label className="block text-xs font-semibold text-text-secondary mb-1.5 uppercase tracking-wider">Cor Primaria</label>
-                  <div className="flex items-center gap-2">
+              {/* Section: Tipografia */}
+              <section>
+                <h4 className="text-[11px] font-bold text-text-muted uppercase tracking-wider mb-3">Tipografia</h4>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-x-5 gap-y-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-text-secondary mb-1.5 uppercase tracking-wider">Fonte Display</label>
                     <input
-                      type="color"
-                      value={editing.primaryColor || '#6C5CE7'}
-                      onChange={(e) => setEditing({ ...editing, primaryColor: e.target.value })}
-                      className="w-12 h-10 rounded-lg border border-border cursor-pointer"
-                    />
-                    <input
-                      value={editing.primaryColor || ''}
-                      onChange={(e) => setEditing({ ...editing, primaryColor: e.target.value })}
-                      placeholder="#6C5CE7"
-                      className="input-field font-mono text-xs"
+                      value={editing.fontFamily || ''}
+                      onChange={(e) => setEditing({ ...editing, fontFamily: e.target.value })}
+                      placeholder="Inter Variable"
+                      className="input-field"
                     />
                   </div>
-                </div>
-
-                {/* Cor Secundaria */}
-                <div>
-                  <label className="block text-xs font-semibold text-text-secondary mb-1.5 uppercase tracking-wider">Cor Secundaria</label>
-                  <div className="flex items-center gap-2">
+                  <div>
+                    <label className="block text-xs font-semibold text-text-secondary mb-1.5 uppercase tracking-wider">Fonte Heading</label>
                     <input
-                      type="color"
-                      value={editing.secondaryColor || '#E84393'}
-                      onChange={(e) => setEditing({ ...editing, secondaryColor: e.target.value })}
-                      className="w-12 h-10 rounded-lg border border-border cursor-pointer"
+                      value={editing.headingFont || ''}
+                      onChange={(e) => setEditing({ ...editing, headingFont: e.target.value })}
+                      placeholder="Sora"
+                      className="input-field"
                     />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-text-secondary mb-1.5 uppercase tracking-wider">Fonte Body</label>
                     <input
-                      value={editing.secondaryColor || ''}
-                      onChange={(e) => setEditing({ ...editing, secondaryColor: e.target.value })}
-                      placeholder="#E84393"
-                      className="input-field font-mono text-xs"
+                      value={editing.bodyFont || ''}
+                      onChange={(e) => setEditing({ ...editing, bodyFont: e.target.value })}
+                      placeholder="Inter"
+                      className="input-field"
                     />
                   </div>
                 </div>
+              </section>
 
-                {/* Tom de Voz */}
-                <div>
-                  <label className="block text-xs font-semibold text-text-secondary mb-1.5 uppercase tracking-wider">Tom de Voz</label>
-                  <input
-                    value={editing.voiceTone || ''}
-                    onChange={(e) => setEditing({ ...editing, voiceTone: e.target.value })}
-                    placeholder="Ex: profissional, descontraido, educativo"
-                    className="input-field"
-                  />
+              {/* Section: Conteudo */}
+              <section>
+                <h4 className="text-[11px] font-bold text-text-muted uppercase tracking-wider mb-3">Conteudo</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-5 gap-y-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-text-secondary mb-1.5 uppercase tracking-wider">Tom de Voz</label>
+                    <input
+                      value={editing.voiceTone || ''}
+                      onChange={(e) => setEditing({ ...editing, voiceTone: e.target.value })}
+                      placeholder="Ex: profissional, descontraido, educativo"
+                      className="input-field"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-text-secondary mb-1.5 uppercase tracking-wider">Produtos / Servicos</label>
+                    <input
+                      value={productsText}
+                      onChange={(e) => setProductsText(e.target.value)}
+                      placeholder="Curso, Mentoria (separados por virgula)"
+                      className="input-field"
+                    />
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="block text-xs font-semibold text-text-secondary mb-1.5 uppercase tracking-wider">Hashtags Padrao</label>
+                    <input
+                      value={hashtagsText}
+                      onChange={(e) => setHashtagsText(e.target.value)}
+                      placeholder="ia, tecnologia, programacao (separadas por virgula)"
+                      className="input-field"
+                    />
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="block text-xs font-semibold text-text-secondary mb-1.5 uppercase tracking-wider">Descricao</label>
+                    <textarea
+                      value={editing.description || ''}
+                      onChange={(e) => setEditing({ ...editing, description: e.target.value })}
+                      rows={3}
+                      placeholder="O que o brand faz? Quais sao seus diferenciais?"
+                      className="input-field resize-none"
+                    />
+                  </div>
                 </div>
+              </section>
 
-                {/* Site URL */}
-                <div>
-                  <label className="block text-xs font-semibold text-text-secondary mb-1.5 uppercase tracking-wider">Site (URL)</label>
-                  <input
-                    type="url"
-                    value={editing.websiteUrl || ''}
-                    onChange={(e) => setEditing({ ...editing, websiteUrl: e.target.value })}
-                    placeholder="https://meusite.com"
-                    className="input-field"
-                  />
-                  <p className="text-[10px] text-text-muted mt-1">Agentes de IA podem visitar essa URL para pesquisar informacoes do brand</p>
+              {/* Section: Links externos */}
+              <section>
+                <h4 className="text-[11px] font-bold text-text-muted uppercase tracking-wider mb-3">Links externos</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-5 gap-y-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-text-secondary mb-1.5 uppercase tracking-wider">Site (URL)</label>
+                    <input
+                      type="url"
+                      value={editing.websiteUrl || ''}
+                      onChange={(e) => setEditing({ ...editing, websiteUrl: e.target.value })}
+                      placeholder="https://meusite.com"
+                      className="input-field"
+                    />
+                    <p className="text-[10px] text-text-muted mt-1">Agentes de IA podem visitar para pesquisar informacoes</p>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-text-secondary mb-1.5 uppercase tracking-wider">Instagram (URL do perfil)</label>
+                    <input
+                      type="url"
+                      value={editing.instagramUrl || ''}
+                      onChange={(e) => setEditing({ ...editing, instagramUrl: e.target.value })}
+                      placeholder="https://instagram.com/seu_usuario"
+                      className="input-field"
+                    />
+                    <p className="text-[10px] text-text-muted mt-1">Agentes podem analisar o estilo para manter consistencia</p>
+                  </div>
                 </div>
+              </section>
 
-                {/* Instagram URL */}
-                <div>
-                  <label className="block text-xs font-semibold text-text-secondary mb-1.5 uppercase tracking-wider">Instagram (URL do perfil)</label>
-                  <input
-                    type="url"
-                    value={editing.instagramUrl || ''}
-                    onChange={(e) => setEditing({ ...editing, instagramUrl: e.target.value })}
-                    placeholder="https://instagram.com/seu_usuario"
-                    className="input-field"
-                  />
-                  <p className="text-[10px] text-text-muted mt-1">Agentes podem analisar o estilo do perfil para manter consistencia visual</p>
-                </div>
-
-                {/* Produtos */}
-                <div>
-                  <label className="block text-xs font-semibold text-text-secondary mb-1.5 uppercase tracking-wider">Produtos / Servicos</label>
-                  <input
-                    value={productsText}
-                    onChange={(e) => setProductsText(e.target.value)}
-                    placeholder="Curso de IA, Mentoria (separados por virgula)"
-                    className="input-field"
-                  />
-                </div>
-
-                {/* Hashtags */}
-                <div>
-                  <label className="block text-xs font-semibold text-text-secondary mb-1.5 uppercase tracking-wider">Hashtags Padrao</label>
-                  <input
-                    value={hashtagsText}
-                    onChange={(e) => setHashtagsText(e.target.value)}
-                    placeholder="ia, tecnologia, programacao (separadas por virgula)"
-                    className="input-field"
-                  />
-                </div>
-
-                {/* Descricao - ocupa 2 colunas */}
-                <div className="md:col-span-2">
-                  <label className="block text-xs font-semibold text-text-secondary mb-1.5 uppercase tracking-wider">Descricao</label>
-                  <textarea
-                    value={editing.description || ''}
-                    onChange={(e) => setEditing({ ...editing, description: e.target.value })}
-                    rows={3}
-                    placeholder="O que o brand faz? Quais sao seus diferenciais?"
-                    className="input-field resize-none"
-                  />
-                </div>
-
-                {/* Default toggle - ocupa 2 colunas */}
-                <label className="md:col-span-2 flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={editing.isDefault || false}
-                    onChange={(e) => setEditing({ ...editing, isDefault: e.target.checked })}
-                    className="w-4 h-4 rounded text-primary"
-                  />
-                  <span className="text-sm text-text-secondary">Definir como brand padrao</span>
-                </label>
-              </div>
+              {/* Default toggle */}
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={editing.isDefault || false}
+                  onChange={(e) => setEditing({ ...editing, isDefault: e.target.checked })}
+                  className="w-4 h-4 rounded text-primary"
+                />
+                <span className="text-sm text-text-secondary">Definir como brand padrao</span>
+              </label>
             </div>
 
             {/* Footer (sticky) */}

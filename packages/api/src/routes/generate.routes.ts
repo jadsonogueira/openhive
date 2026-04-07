@@ -41,6 +41,12 @@ const templateSchema = z.object({
   brandId: z.string().optional(),
   primaryColor: z.string().optional(),
   secondaryColor: z.string().optional(),
+  backgroundColor: z.string().optional(),
+  textColor: z.string().optional(),
+  mutedColor: z.string().optional(),
+  fontFamily: z.string().optional(),
+  headingFont: z.string().optional(),
+  bodyFont: z.string().optional(),
   logoUrl: z.string().optional(),
   brandName: z.string().optional(),
   applyBrand: z.boolean().optional(),
@@ -59,6 +65,12 @@ router.post('/template', validate(templateSchema), async (req: AuthRequest, res:
       if (brand) {
         body.primaryColor = body.primaryColor || brand.primaryColor;
         body.secondaryColor = body.secondaryColor || brand.secondaryColor;
+        body.backgroundColor = body.backgroundColor || brand.backgroundColor || undefined;
+        body.textColor = body.textColor || brand.textColor || undefined;
+        body.mutedColor = body.mutedColor || brand.mutedColor || undefined;
+        body.fontFamily = body.fontFamily || brand.fontFamily || undefined;
+        body.headingFont = body.headingFont || brand.headingFont || undefined;
+        body.bodyFont = body.bodyFont || brand.bodyFont || undefined;
         body.logoUrl = body.logoUrl || brand.logoUrl || undefined;
         body.brandName = body.brandName || brand.name;
       }

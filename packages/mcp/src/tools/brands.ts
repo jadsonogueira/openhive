@@ -6,7 +6,12 @@ export interface CreateBrandInput {
   primary_color?: string;
   secondary_color?: string;
   accent_color?: string;
+  background_color?: string;
+  text_color?: string;
+  muted_color?: string;
   font_family?: string;
+  heading_font?: string;
+  body_font?: string;
   description?: string;
   voice_tone?: string;
   website_url?: string;
@@ -27,7 +32,12 @@ function toApiBody(input: Partial<CreateBrandInput>): Record<string, unknown> {
   if (input.primary_color !== undefined) body.primaryColor = input.primary_color;
   if (input.secondary_color !== undefined) body.secondaryColor = input.secondary_color;
   if (input.accent_color !== undefined) body.accentColor = input.accent_color;
+  if (input.background_color !== undefined) body.backgroundColor = input.background_color;
+  if (input.text_color !== undefined) body.textColor = input.text_color;
+  if (input.muted_color !== undefined) body.mutedColor = input.muted_color;
   if (input.font_family !== undefined) body.fontFamily = input.font_family;
+  if (input.heading_font !== undefined) body.headingFont = input.heading_font;
+  if (input.body_font !== undefined) body.bodyFont = input.body_font;
   if (input.description !== undefined) body.description = input.description;
   if (input.voice_tone !== undefined) body.voiceTone = input.voice_tone;
   if (input.website_url !== undefined) body.websiteUrl = input.website_url;
@@ -47,7 +57,12 @@ function toResponse(brand: any) {
     primary_color: brand.primaryColor,
     secondary_color: brand.secondaryColor,
     accent_color: brand.accentColor,
+    background_color: brand.backgroundColor,
+    text_color: brand.textColor,
+    muted_color: brand.mutedColor,
     font_family: brand.fontFamily,
+    heading_font: brand.headingFont,
+    body_font: brand.bodyFont,
     description: brand.description,
     voice_tone: brand.voiceTone,
     website_url: brand.websiteUrl,

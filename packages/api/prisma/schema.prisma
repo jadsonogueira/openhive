@@ -46,7 +46,12 @@ model Brand {
   primaryColor    String   @default("#6C5CE7")
   secondaryColor  String   @default("#E84393")
   accentColor     String?
+  backgroundColor String?
+  textColor       String?
+  mutedColor      String?
   fontFamily      String?
+  headingFont     String?
+  bodyFont        String?
   description     String?
   voiceTone       String?
   websiteUrl      String?
