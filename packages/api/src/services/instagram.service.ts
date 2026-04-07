@@ -6,6 +6,21 @@ function sleep(ms: number) {
 }
 
 /**
+ * Detect which Instagram API endpoint to use based on token format.
+ * - Tokens starting with "EAA" are Facebook Business tokens -> use graph.facebook.com
+ * - Other tokens (typically starting with "IGAA") are Instagram Login tokens -> use graph.instagram.com
+ *
+ * Both APIs expose the same /media, /media_publish, and /{container-id} endpoints,
+ * but they only accept their own token format.
+ */
+function getGraphBase(token: string): string {
+  if (token.startsWith('EAA')) {
+    return 'https://graph.facebook.com/v21.0';
+  }
+  return 'https://graph.instagram.com/v21.0';
+}
+
+/**
  * Retry a function on transient Instagram API errors (code 2, is_transient: true).
  * Uses exponential backoff: 5s, 15s, 30s
  */
@@ -70,13 +85,14 @@ async function getPublicImageUrl(imageUrl: string): Promise<string> {
 }
 
 async function pollContainerStatus(containerId: string, token: string, maxAttempts = 20, intervalMs = 3000) {
-  console.log(`[Instagram] Polling container ${containerId}...`);
+  const base = getGraphBase(token);
+  console.log(`[Instagram] Polling container ${containerId} via ${base}...`);
   let status = 'IN_PROGRESS';
   let attempts = 0;
   while (status !== 'FINISHED' && attempts < maxAttempts) {
     await sleep(intervalMs);
     const check = await fetch(
-      `https://graph.instagram.com/v21.0/${containerId}?fields=status_code&access_token=${token}`,
+      `${base}/${containerId}?fields=status_code&access_token=${token}`,
     );
     const checkData = (await check.json()) as any;
     status = checkData.status_code;
@@ -90,8 +106,9 @@ async function pollContainerStatus(containerId: string, token: string, maxAttemp
 }
 
 async function publishContainer(containerId: string, token: string, igUserId: string) {
-  console.log('[Instagram] Publishing media...');
-  const publishRes = await fetch(`https://graph.instagram.com/v21.0/${igUserId}/media_publish`, {
+  const base = getGraphBase(token);
+  console.log(`[Instagram] Publishing media via ${base}...`);
+  const publishRes = await fetch(`${base}/${igUserId}/media_publish`, {
     method: 'POST',
     body: new URLSearchParams({
       creation_id: containerId,
@@ -110,7 +127,8 @@ async function publishContainer(containerId: string, token: string, igUserId: st
 }
 
 async function createChildContainer(publicUrl: string, token: string, igUserId: string): Promise<string> {
-  const res = await fetch(`https://graph.instagram.com/v21.0/${igUserId}/media`, {
+  const base = getGraphBase(token);
+  const res = await fetch(`${base}/${igUserId}/media`, {
     method: 'POST',
     body: new URLSearchParams({
       image_url: publicUrl,
@@ -129,13 +147,15 @@ async function createChildContainer(publicUrl: string, token: string, igUserId: 
 
 async function publishSingleImage(imageUrl: string, caption: string, token: string, igUserId: string) {
   const publicImageUrl = await getPublicImageUrl(imageUrl);
+  const base = getGraphBase(token);
 
   console.log('[Instagram] Creating single image container...');
+  console.log('[Instagram] Endpoint:', base);
   console.log('[Instagram] User ID:', igUserId);
   console.log('[Instagram] Image URL:', publicImageUrl);
 
   const createData = await withRetry(async () => {
-    const createRes = await fetch(`https://graph.instagram.com/v21.0/${igUserId}/media`, {
+    const createRes = await fetch(`${base}/${igUserId}/media`, {
       method: 'POST',
       body: new URLSearchParams({
         image_url: publicImageUrl,
@@ -195,7 +215,9 @@ async function publishCarousel(
   }
 
   // Step 4: Create carousel container (children must be comma-separated)
+  const base = getGraphBase(token);
   console.log('[Instagram] Creating carousel container...');
+  console.log('[Instagram] Endpoint:', base);
   console.log('[Instagram] Children IDs:', childContainerIds);
 
   const carouselData = await withRetry(async () => {
@@ -205,7 +227,7 @@ async function publishCarousel(
       caption,
       access_token: token,
     });
-    const carouselRes = await fetch(`https://graph.instagram.com/v21.0/${igUserId}/media`, {
+    const carouselRes = await fetch(`${base}/${igUserId}/media`, {
       method: 'POST',
       body: params,
     });
@@ -233,7 +255,10 @@ async function publishVideoMedia(
   igUserId: string,
   mode: VideoPublishMode = 'REELS',
 ) {
+  const base = getGraphBase(token);
   console.log(`[Instagram] Publishing video as ${mode}...`);
+  console.log('[Instagram] Endpoint:', base);
+  console.log('[Instagram] Token type:', token.startsWith('EAA') ? 'EAA (Facebook Business)' : 'IGAA (Instagram Login)');
   console.log('[Instagram] User ID:', igUserId);
   console.log('[Instagram] Video URL:', videoUrl);
 
@@ -257,7 +282,7 @@ async function publishVideoMedia(
 
     console.log('[Instagram] Create container params:', Array.from(params.keys()).join(', '));
 
-    const createRes = await fetch(`https://graph.instagram.com/v21.0/${igUserId}/media`, {
+    const createRes = await fetch(`${base}/${igUserId}/media`, {
       method: 'POST',
       body: params,
     });
