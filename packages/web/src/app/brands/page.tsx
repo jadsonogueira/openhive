@@ -450,13 +450,19 @@ export default function BrandsPage() {
                     />
                   </div>
                   <div className="md:col-span-2">
-                    <label className="block text-xs font-semibold text-text-secondary mb-1.5 uppercase tracking-wider">Descricao</label>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <label className="block text-xs font-semibold text-text-secondary uppercase tracking-wider">Descricao</label>
+                      <span className="text-[10px] text-text-muted tabular-nums">
+                        {(editing.description || '').length}/10000
+                      </span>
+                    </div>
                     <textarea
                       value={editing.description || ''}
                       onChange={(e) => setEditing({ ...editing, description: e.target.value })}
-                      rows={3}
-                      placeholder="O que o brand faz? Quais sao seus diferenciais?"
-                      className="input-field resize-none"
+                      rows={5}
+                      maxLength={10000}
+                      placeholder="O que o brand faz? Quais sao seus diferenciais? Pode incluir tom de voz detalhado, posicionamento, audiencia, etc."
+                      className="input-field resize-y"
                     />
                   </div>
                 </div>
