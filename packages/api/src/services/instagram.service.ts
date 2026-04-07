@@ -224,36 +224,62 @@ async function publishCarousel(
   return await publishContainer(carouselData.id, token, igUserId);
 }
 
-async function publishReel(videoUrl: string, caption: string, token: string, igUserId: string) {
-  console.log('[Instagram] Creating Reels container...');
+type VideoPublishMode = 'REELS' | 'STORIES' | 'FEED';
+
+async function publishVideoMedia(
+  videoUrl: string,
+  caption: string,
+  token: string,
+  igUserId: string,
+  mode: VideoPublishMode = 'REELS',
+) {
+  console.log(`[Instagram] Publishing video as ${mode}...`);
   console.log('[Instagram] User ID:', igUserId);
   console.log('[Instagram] Video URL:', videoUrl);
 
-  // Step 1: Create media container with VIDEO/REELS
+  // Step 1: Create media container - params differ per mode
   const createData = await withRetry(async () => {
+    const params = new URLSearchParams();
+    params.append('access_token', token);
+    params.append('video_url', videoUrl);
+
+    if (mode === 'REELS') {
+      params.append('media_type', 'REELS');
+      if (caption) params.append('caption', caption);
+    } else if (mode === 'STORIES') {
+      params.append('media_type', 'STORIES');
+      // Stories don't accept caption text via the API
+    } else {
+      // FEED video (deprecated by Instagram in favor of REELS, but still works)
+      params.append('media_type', 'VIDEO');
+      if (caption) params.append('caption', caption);
+    }
+
+    console.log('[Instagram] Create container params:', Array.from(params.keys()).join(', '));
+
     const createRes = await fetch(`https://graph.instagram.com/v21.0/${igUserId}/media`, {
       method: 'POST',
-      body: new URLSearchParams({
-        media_type: 'REELS',
-        video_url: videoUrl,
-        caption,
-        access_token: token,
-      }),
+      body: params,
     });
     const data = (await createRes.json()) as any;
-    console.log('[Instagram] Create Reels container response:', JSON.stringify(data));
+    console.log(`[Instagram] Create ${mode} container response:`, JSON.stringify(data));
     if (!data.id) {
-      throw new Error(`Failed to create Reels container: ${JSON.stringify(data)}`);
+      throw new Error(`Failed to create ${mode} container: ${JSON.stringify(data)}`);
     }
     return data;
-  }, 'Create Reels container');
+  }, `Create ${mode} container`);
 
   // Step 2: Poll for processing (videos take longer than images, ~30-90s)
-  // 40 attempts x 5s = 200s (3min 20s) max
-  await pollContainerStatus(createData.id, token, 40, 5000);
+  // 60 attempts x 5s = 300s (5min) max
+  await pollContainerStatus(createData.id, token, 60, 5000);
 
   // Step 3: Publish
   return await publishContainer(createData.id, token, igUserId);
+}
+
+// Backwards-compat wrapper
+async function publishReel(videoUrl: string, caption: string, token: string, igUserId: string) {
+  return publishVideoMedia(videoUrl, caption, token, igUserId, 'REELS');
 }
 
 export async function publishToInstagram(postId: string, accountId?: string) {
@@ -302,10 +328,12 @@ export async function publishToInstagram(postId: string, accountId?: string) {
     .filter(Boolean)
     .join('\n\n');
 
-  // Video (Reels)
+  // Video (Reels / Stories / Feed)
   if (post.mediaType === 'VIDEO') {
     if (!post.videoUrl) throw new Error('Video post has no videoUrl');
-    return await publishReel(post.videoUrl, caption, token, igUserId);
+    // publishMode field defines where to post (defaults to REELS for videos)
+    const mode = (post.publishMode === 'FEED' ? 'FEED' : post.publishMode === 'STORIES' ? 'STORIES' : 'REELS') as VideoPublishMode;
+    return await publishVideoMedia(post.videoUrl, caption, token, igUserId, mode);
   }
 
   // Carousel or single image?

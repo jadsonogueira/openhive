@@ -36,6 +36,7 @@ const createPostSchema = z.object({
   images: z.array(postImageSchema).min(2).max(10).optional(),
   // Video fields
   mediaType: z.enum(['IMAGE', 'VIDEO', 'CAROUSEL']).optional(),
+  publishMode: z.enum(['FEED', 'REELS', 'STORIES']).optional(),
   videoUrl: z.string().url().optional(),
   videoMinioKey: z.string().optional(),
   videoDurationSec: z.number().int().optional(),

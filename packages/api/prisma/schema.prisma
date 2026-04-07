@@ -98,11 +98,13 @@ model Post {
   aspectRatio     String      @default("1:1")
   isCarousel      Boolean     @default(false)
   mediaType       MediaType   @default(IMAGE)
+  publishMode     PublishMode @default(FEED)
   videoUrl        String?
   videoMinioKey   String?
   videoDurationSec Int?
   videoSizeBytes  Int?
   keepMedia       Boolean     @default(false)
+  lastError       String?
   driveLink       String?
   fileUrl         String?
   userId          String
@@ -120,6 +122,12 @@ enum MediaType {
   IMAGE
   VIDEO
   CAROUSEL
+}
+
+enum PublishMode {
+  FEED
+  REELS
+  STORIES
 }
 
 model PostImage {

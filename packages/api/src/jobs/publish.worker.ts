@@ -18,7 +18,7 @@ export const publishWorker = new Worker(
       const result = await publishToInstagram(postId, accountId);
       await prisma.post.update({
         where: { id: postId },
-        data: { status: 'PUBLISHED', publishedAt: new Date(), instagramId: result.id },
+        data: { status: 'PUBLISHED', publishedAt: new Date(), instagramId: result.id, lastError: null },
       });
 
       // Auto-cleanup video from MinIO after successful publish (unless keepMedia=true)
@@ -39,10 +39,15 @@ export const publishWorker = new Worker(
           // Don't fail the job - the post was already published
         }
       }
-    } catch (error) {
+    } catch (error: any) {
+      const errorMsg = error?.message || String(error);
+      console.error(`[publish.worker] Post ${postId} failed:`, errorMsg);
       await prisma.post.update({
         where: { id: postId },
-        data: { status: 'FAILED' },
+        data: {
+          status: 'FAILED',
+          lastError: errorMsg.slice(0, 2000),
+        },
       });
       throw error;
     }

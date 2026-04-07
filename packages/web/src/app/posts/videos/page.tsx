@@ -9,6 +9,8 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 
+type PublishMode = 'REELS' | 'STORIES';
+
 interface VideoItem {
   id: string;
   file: File;
@@ -22,6 +24,7 @@ interface VideoItem {
   hashtags: string;
   scheduledAt: string;
   keepMedia: boolean;
+  publishMode: PublishMode;
   postId?: string;
   error?: string;
   previewUrl: string; // local blob URL
@@ -38,6 +41,7 @@ export default function VideosBulkPage() {
   const [bulkScheduleStart, setBulkScheduleStart] = useState('');
   const [bulkIntervalMin, setBulkIntervalMin] = useState(60);
   const [keepMediaDefault, setKeepMediaDefault] = useState(false);
+  const [defaultPublishMode, setDefaultPublishMode] = useState<PublishMode>('REELS');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const dragRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -70,6 +74,7 @@ export default function VideosBulkPage() {
         hashtags: globalHashtags,
         scheduledAt: '',
         keepMedia: keepMediaDefault,
+        publishMode: defaultPublishMode,
         previewUrl: URL.createObjectURL(file),
       });
     }
@@ -160,14 +165,15 @@ export default function VideosBulkPage() {
     updateItem(item.id, { status: 'saving' });
     try {
       const post = (await api.createPost({
-        caption: item.caption || undefined,
+        caption: item.publishMode === 'STORIES' ? undefined : (item.caption || undefined),
         mediaType: 'VIDEO',
+        publishMode: item.publishMode,
         videoUrl: item.videoUrl,
         videoMinioKey: item.videoMinioKey,
         videoSizeBytes: item.sizeBytes,
         keepMedia: item.keepMedia,
         aspectRatio: '9:16',
-        hashtags: item.hashtags.split(',').map((h) => h.trim()).filter(Boolean),
+        hashtags: item.publishMode === 'STORIES' ? [] : item.hashtags.split(',').map((h) => h.trim()).filter(Boolean),
       })) as any;
 
       if (item.scheduledAt) {
@@ -324,6 +330,39 @@ export default function VideosBulkPage() {
                 </div>
               </div>
 
+              {/* Default publish mode */}
+              <div>
+                <label className="block text-[10px] font-semibold text-text-muted mb-1.5 uppercase">Modo de publicacao padrao</label>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => {
+                      setDefaultPublishMode('REELS');
+                      setItems((prev) => prev.map((it) => (it.status === 'pending' || it.status === 'uploaded') ? { ...it, publishMode: 'REELS' } : it));
+                    }}
+                    className={`flex-1 px-3 py-2 rounded-lg text-xs font-semibold border transition-all ${
+                      defaultPublishMode === 'REELS'
+                        ? 'border-primary bg-primary/[0.08] text-primary'
+                        : 'border-border bg-white text-text-secondary hover:border-primary/50'
+                    }`}
+                  >
+                    Reels (com legenda)
+                  </button>
+                  <button
+                    onClick={() => {
+                      setDefaultPublishMode('STORIES');
+                      setItems((prev) => prev.map((it) => (it.status === 'pending' || it.status === 'uploaded') ? { ...it, publishMode: 'STORIES' } : it));
+                    }}
+                    className={`flex-1 px-3 py-2 rounded-lg text-xs font-semibold border transition-all ${
+                      defaultPublishMode === 'STORIES'
+                        ? 'border-primary bg-primary/[0.08] text-primary'
+                        : 'border-border bg-white text-text-secondary hover:border-primary/50'
+                    }`}
+                  >
+                    Stories (sem legenda)
+                  </button>
+                </div>
+              </div>
+
               {/* Keep media default */}
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
@@ -432,6 +471,36 @@ export default function VideosBulkPage() {
                       <p className="text-[10px] text-status-failed">{item.error}</p>
                     )}
 
+                    {/* Publish mode selector */}
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-semibold text-text-muted uppercase">Publicar como:</span>
+                      <div className="flex gap-1">
+                        <button
+                          onClick={() => updateItem(item.id, { publishMode: 'REELS' })}
+                          className={`px-2.5 py-1 rounded-badge text-[10px] font-bold border transition-all ${
+                            item.publishMode === 'REELS'
+                              ? 'border-primary bg-primary text-white'
+                              : 'border-border bg-white text-text-secondary'
+                          }`}
+                        >
+                          REELS
+                        </button>
+                        <button
+                          onClick={() => updateItem(item.id, { publishMode: 'STORIES' })}
+                          className={`px-2.5 py-1 rounded-badge text-[10px] font-bold border transition-all ${
+                            item.publishMode === 'STORIES'
+                              ? 'border-primary bg-primary text-white'
+                              : 'border-border bg-white text-text-secondary'
+                          }`}
+                        >
+                          STORIES
+                        </button>
+                      </div>
+                      {item.publishMode === 'STORIES' && (
+                        <span className="text-[9px] text-text-muted italic">(Stories nao usa legenda nem hashtags)</span>
+                      )}
+                    </div>
+
                     {/* Caption + hashtags + schedule */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                       <div>
@@ -441,8 +510,9 @@ export default function VideosBulkPage() {
                           onChange={(e) => updateItem(item.id, { caption: e.target.value })}
                           rows={2}
                           maxLength={2200}
-                          placeholder="Legenda do reel..."
-                          className="input-field text-xs resize-none"
+                          disabled={item.publishMode === 'STORIES'}
+                          placeholder={item.publishMode === 'STORIES' ? 'Stories nao aceita legenda' : 'Legenda do reel...'}
+                          className="input-field text-xs resize-none disabled:opacity-50"
                         />
                       </div>
                       <div className="space-y-2">
@@ -451,8 +521,9 @@ export default function VideosBulkPage() {
                           <input
                             value={item.hashtags}
                             onChange={(e) => updateItem(item.id, { hashtags: e.target.value })}
-                            placeholder="reels, viral"
-                            className="input-field text-xs"
+                            disabled={item.publishMode === 'STORIES'}
+                            placeholder={item.publishMode === 'STORIES' ? '-' : 'reels, viral'}
+                            className="input-field text-xs disabled:opacity-50"
                           />
                         </div>
                         <div>

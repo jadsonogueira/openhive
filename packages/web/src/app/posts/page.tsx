@@ -211,10 +211,17 @@ export default function PostsList() {
                     <div>
                       <p className="text-sm text-text-primary max-w-xs truncate">{post.caption || 'Sem legenda'}</p>
                       {post.mediaType === 'VIDEO' && (
-                        <span className="text-[10px] text-primary font-semibold">REELS / VIDEO</span>
+                        <span className="text-[10px] text-primary font-bold uppercase">
+                          {post.publishMode === 'STORIES' ? 'Stories' : post.publishMode === 'FEED' ? 'Feed Video' : 'Reels'}
+                        </span>
                       )}
                       {post.isCarousel && post.images?.length > 0 && (
                         <span className="text-[10px] text-text-muted">{post.images.length} imagens</span>
+                      )}
+                      {post.status === 'FAILED' && post.lastError && (
+                        <p className="text-[10px] text-status-failed mt-1 max-w-xs truncate" title={post.lastError}>
+                          {post.lastError}
+                        </p>
                       )}
                     </div>
                   </div>
