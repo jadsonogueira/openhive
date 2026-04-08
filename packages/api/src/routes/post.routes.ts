@@ -42,6 +42,7 @@ const createPostSchema = z.object({
   videoDurationSec: z.number().int().optional(),
   videoSizeBytes: z.number().int().optional(),
   keepMedia: z.boolean().optional(),
+  editorState: z.any().optional(),
 });
 
 const scheduleSchema = z.object({

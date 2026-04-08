@@ -105,6 +105,7 @@ model Post {
   videoSizeBytes  Int?
   keepMedia       Boolean     @default(false)
   lastError       String?
+  editorState     Json?
   driveLink       String?
   fileUrl         String?
   userId          String
