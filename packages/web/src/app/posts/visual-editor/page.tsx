@@ -410,7 +410,7 @@ export default function VisualEditorPage() {
             <div className="flex items-center gap-1 text-[11px] text-text-muted font-semibold">
               <div className="flex items-center bg-bg-main rounded-lg p-0.5">
                 {(['1:1', '4:5', '9:16'] as AspectRatio[]).map((ar) => (
-                  <button key={ar} onClick={() => setAspectRatio(ar)}
+                  <button key={ar} onClick={() => { setAspectRatio(ar); setSlides((prev) => prev.map((s) => ({ ...s, renderedUrl: undefined }))); }}
                     className={`px-2.5 py-1 rounded-md text-[11px] font-semibold transition-all ${aspectRatio === ar ? 'bg-bg-card text-primary shadow-sm' : 'text-text-muted hover:text-text-secondary'}`}
                   >{ar}</button>
                 ))}
