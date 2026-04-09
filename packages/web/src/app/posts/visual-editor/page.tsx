@@ -6,17 +6,20 @@ import Link from 'next/link';
 import { api } from '../../../lib/api';
 import {
   Plus, Trash2, Save, Loader2, Image as ImageIcon, Type, Palette,
-  ChevronLeft, Sparkles, Layers, Wand2, Upload, Download,
+  ChevronLeft, Sparkles, Layers, Wand2, Upload, Download, Code2,
 } from 'lucide-react';
 
 type AspectRatio = '1:1' | '4:5' | '9:16';
 
+type SlideMode = 'visual' | 'html';
+
 interface SlideState {
   id: string;
+  mode: SlideMode;
   // Background
   backgroundUrl: string;
   backgroundPrompt: string; // last prompt used to generate
-  // Title
+  // Visual mode: Title fields
   title: string;
   subtitle: string;
   position: 'top-left' | 'top-center' | 'top-right' | 'middle-left' | 'middle-center' | 'middle-right' | 'bottom-left' | 'bottom-center' | 'bottom-right';
@@ -26,6 +29,8 @@ interface SlideState {
   titleColor: string;
   fontFamily: string;
   fontWeight: number;
+  // HTML mode: raw HTML content
+  htmlContent: string;
   // Visual
   overlayOpacity: number;
   // Render result
@@ -59,9 +64,10 @@ const COLORS = ['#ffffff', '#000000', '#FFD700', '#EF4444', '#3B82F6', '#22C55E'
 
 function makeId() { return Math.random().toString(36).slice(2); }
 
-function emptySlide(idx: number): SlideState {
+function emptySlide(idx: number, mode: SlideMode = 'visual'): SlideState {
   return {
     id: makeId(),
+    mode,
     backgroundUrl: '',
     backgroundPrompt: '',
     title: `Slide ${idx + 1}`,
@@ -73,11 +79,22 @@ function emptySlide(idx: number): SlideState {
     titleColor: '#ffffff',
     fontFamily: 'Inter',
     fontWeight: 800,
+    htmlContent: `<div class="flex items-center justify-center w-full h-full p-16 text-center">
+  <h1 class="text-7xl font-black text-white" style="text-shadow: 0 6px 40px rgba(0,0,0,0.6);">
+    Slide ${idx + 1}
+  </h1>
+</div>`,
     overlayOpacity: 0.4,
   };
 }
 
 function buildSlideHtml(slide: SlideState): string {
+  // HTML mode: use raw htmlContent directly
+  if (slide.mode === 'html') {
+    return slide.htmlContent;
+  }
+
+  // Visual mode: build from title/subtitle/position fields
   const positionStyles: Record<SlideState['position'], string> = {
     'top-left': 'top:80px;left:80px;align-items:flex-start;justify-content:flex-start;text-align:left;',
     'top-center': 'top:80px;left:0;right:0;align-items:center;justify-content:flex-start;text-align:center;',
@@ -491,53 +508,61 @@ export default function VisualEditorPage() {
               {/* Dark overlay */}
               <div className="absolute inset-0" style={{ background: `rgba(0,0,0,${active.overlayOpacity})` }} />
 
-              {/* Title rendering with same logic as buildSlideHtml */}
-              <div
-                className="absolute flex flex-col gap-4 max-w-[85%]"
-                style={{
-                  ...(active.position === 'top-left' && { top: '8%', left: '8%', alignItems: 'flex-start', textAlign: 'left' }),
-                  ...(active.position === 'top-center' && { top: '8%', left: 0, right: 0, alignItems: 'center', textAlign: 'center' }),
-                  ...(active.position === 'top-right' && { top: '8%', right: '8%', alignItems: 'flex-end', textAlign: 'right' }),
-                  ...(active.position === 'middle-left' && { inset: 0, alignItems: 'flex-start', justifyContent: 'center', textAlign: 'left', paddingLeft: '8%' }),
-                  ...(active.position === 'middle-center' && { inset: 0, alignItems: 'center', justifyContent: 'center', textAlign: 'center' }),
-                  ...(active.position === 'middle-right' && { inset: 0, alignItems: 'flex-end', justifyContent: 'center', textAlign: 'right', paddingRight: '8%' }),
-                  ...(active.position === 'bottom-left' && { bottom: '13%', left: '8%', alignItems: 'flex-start', textAlign: 'left' }),
-                  ...(active.position === 'bottom-center' && { bottom: '13%', left: 0, right: 0, alignItems: 'center', textAlign: 'center' }),
-                  ...(active.position === 'bottom-right' && { bottom: '13%', right: '8%', alignItems: 'flex-end', textAlign: 'right' }),
-                  fontFamily: `'${active.fontFamily}', sans-serif`,
-                  display: 'flex',
-                  justifyContent: active.position.startsWith('middle') ? 'center' : (active.position.startsWith('top') ? 'flex-start' : 'flex-end'),
-                }}
-              >
-                <h1
+              {/* Content layer - Visual mode or HTML mode */}
+              {active.mode === 'html' ? (
+                <div
+                  className="absolute inset-0 overflow-hidden"
+                  style={{ transform: 'scale(0.556)', transformOrigin: 'top left', width: '1080px', height: '1080px' }}
+                  dangerouslySetInnerHTML={{ __html: active.htmlContent }}
+                />
+              ) : (
+                <div
+                  className="absolute flex flex-col gap-4 max-w-[85%]"
                   style={{
-                    fontSize: `${active.titleSize / 1.8}px`,
-                    fontWeight: active.fontWeight,
-                    color: active.titleColor,
-                    lineHeight: 1.05,
-                    textShadow: '0 6px 40px rgba(0,0,0,0.6)',
-                    margin: 0,
-                    letterSpacing: '-0.02em',
+                    ...(active.position === 'top-left' && { top: '8%', left: '8%', alignItems: 'flex-start', textAlign: 'left' }),
+                    ...(active.position === 'top-center' && { top: '8%', left: 0, right: 0, alignItems: 'center', textAlign: 'center' }),
+                    ...(active.position === 'top-right' && { top: '8%', right: '8%', alignItems: 'flex-end', textAlign: 'right' }),
+                    ...(active.position === 'middle-left' && { inset: 0, alignItems: 'flex-start', justifyContent: 'center', textAlign: 'left', paddingLeft: '8%' }),
+                    ...(active.position === 'middle-center' && { inset: 0, alignItems: 'center', justifyContent: 'center', textAlign: 'center' }),
+                    ...(active.position === 'middle-right' && { inset: 0, alignItems: 'flex-end', justifyContent: 'center', textAlign: 'right', paddingRight: '8%' }),
+                    ...(active.position === 'bottom-left' && { bottom: '13%', left: '8%', alignItems: 'flex-start', textAlign: 'left' }),
+                    ...(active.position === 'bottom-center' && { bottom: '13%', left: 0, right: 0, alignItems: 'center', textAlign: 'center' }),
+                    ...(active.position === 'bottom-right' && { bottom: '13%', right: '8%', alignItems: 'flex-end', textAlign: 'right' }),
+                    fontFamily: `'${active.fontFamily}', sans-serif`,
+                    display: 'flex',
+                    justifyContent: active.position.startsWith('middle') ? 'center' : (active.position.startsWith('top') ? 'flex-start' : 'flex-end'),
                   }}
                 >
-                  {active.title}
-                </h1>
-                {active.subtitle && (
-                  <p
+                  <h1
                     style={{
-                      fontSize: `${active.subtitleSize / 1.8}px`,
-                      fontWeight: 400,
+                      fontSize: `${active.titleSize / 1.8}px`,
+                      fontWeight: active.fontWeight,
                       color: active.titleColor,
-                      opacity: 0.9,
-                      lineHeight: 1.3,
-                      textShadow: '0 4px 30px rgba(0,0,0,0.5)',
+                      lineHeight: 1.05,
+                      textShadow: '0 6px 40px rgba(0,0,0,0.6)',
                       margin: 0,
+                      letterSpacing: '-0.02em',
                     }}
                   >
-                    {active.subtitle}
-                  </p>
-                )}
-              </div>
+                    {active.title}
+                  </h1>
+                  {active.subtitle && (
+                    <p
+                      style={{
+                        fontSize: `${active.subtitleSize / 1.8}px`,
+                        fontWeight: 400,
+                        color: active.titleColor,
+                        opacity: 0.9,
+                        lineHeight: 1.3,
+                        textShadow: '0 4px 30px rgba(0,0,0,0.5)',
+                        margin: 0,
+                      }}
+                    >
+                      {active.subtitle}
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
             <p className="text-center text-xs text-text-muted mt-3">
               Slide {activeIdx + 1} de {slides.length} - {active.renderedUrl ? 'renderizado' : 'preview ao vivo (clique em renderizar para gerar PNG final)'}
@@ -611,6 +636,40 @@ export default function VisualEditorPage() {
             <p className="text-[10px] text-text-muted mt-1.5">Logo e cores do brand sao aplicados ao renderizar</p>
           </div>
 
+          {/* Slide mode toggle */}
+          <div className="card p-4">
+            <h3 className="text-[11px] font-bold text-text-muted uppercase tracking-wider mb-2">Modo do slide</h3>
+            <div className="flex gap-1">
+              <button
+                onClick={() => updateActive({ mode: 'visual', renderedUrl: undefined })}
+                className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-[11px] font-bold border transition-all ${
+                  active.mode === 'visual'
+                    ? 'bg-primary text-white border-primary'
+                    : 'bg-white text-text-secondary border-border hover:border-primary/50'
+                }`}
+              >
+                <Type className="w-3.5 h-3.5" />
+                Visual
+              </button>
+              <button
+                onClick={() => updateActive({ mode: 'html', renderedUrl: undefined })}
+                className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-[11px] font-bold border transition-all ${
+                  active.mode === 'html'
+                    ? 'bg-primary text-white border-primary'
+                    : 'bg-white text-text-secondary border-border hover:border-primary/50'
+                }`}
+              >
+                <Code2 className="w-3.5 h-3.5" />
+                HTML
+              </button>
+            </div>
+            <p className="text-[10px] text-text-muted mt-1.5">
+              {active.mode === 'visual'
+                ? 'Titulo/subtitulo com controles visuais'
+                : 'HTML/Tailwind livre — controle total do overlay'}
+            </p>
+          </div>
+
           {/* Background section */}
           <div className="card p-4">
             <h3 className="text-[11px] font-bold text-text-muted uppercase tracking-wider mb-2 flex items-center gap-1.5">
@@ -675,118 +734,145 @@ export default function VisualEditorPage() {
             </div>
           </div>
 
-          {/* Title section */}
-          <div className="card p-4">
-            <h3 className="text-[11px] font-bold text-text-muted uppercase tracking-wider mb-2 flex items-center gap-1.5">
-              <Type className="w-3.5 h-3.5" /> Titulo & Subtitulo
-            </h3>
+          {/* Content section: Visual mode OR HTML mode */}
+          {active.mode === 'visual' ? (
+            <div className="card p-4">
+              <h3 className="text-[11px] font-bold text-text-muted uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                <Type className="w-3.5 h-3.5" /> Titulo & Subtitulo
+              </h3>
 
-            <textarea
-              value={active.title}
-              onChange={(e) => updateActive({ title: e.target.value })}
-              rows={2}
-              placeholder="Titulo"
-              className="input-field text-xs resize-none mb-2"
-            />
-            <textarea
-              value={active.subtitle}
-              onChange={(e) => updateActive({ subtitle: e.target.value })}
-              rows={2}
-              placeholder="Subtitulo"
-              className="input-field text-xs resize-none mb-3"
-            />
-
-            {/* Position grid */}
-            <label className="text-[10px] font-semibold text-text-muted uppercase mb-1 block">Posicao</label>
-            <div className="grid grid-cols-3 gap-1 mb-3">
-              {POSITIONS.map((p) => (
-                <button
-                  key={p.id}
-                  onClick={() => updateActive({ position: p.id })}
-                  className={`text-[9px] py-1.5 rounded border ${
-                    active.position === p.id ? 'bg-primary text-white border-primary' : 'bg-white border-border text-text-secondary hover:border-primary/50'
-                  }`}
-                >
-                  {p.label}
-                </button>
-              ))}
-            </div>
-
-            {/* Title size */}
-            <div className="mb-2">
-              <label className="text-[10px] font-semibold text-text-muted uppercase">Titulo: {active.titleSize}px</label>
-              <input
-                type="range"
-                min={32}
-                max={140}
-                step={2}
-                value={active.titleSize}
-                onChange={(e) => updateActive({ titleSize: Number(e.target.value) })}
-                className="w-full"
+              <textarea
+                value={active.title}
+                onChange={(e) => updateActive({ title: e.target.value })}
+                rows={2}
+                placeholder="Titulo"
+                className="input-field text-xs resize-none mb-2"
               />
-            </div>
-
-            {/* Subtitle size */}
-            <div className="mb-3">
-              <label className="text-[10px] font-semibold text-text-muted uppercase">Subtitulo: {active.subtitleSize}px</label>
-              <input
-                type="range"
-                min={14}
-                max={56}
-                step={2}
-                value={active.subtitleSize}
-                onChange={(e) => updateActive({ subtitleSize: Number(e.target.value) })}
-                className="w-full"
+              <textarea
+                value={active.subtitle}
+                onChange={(e) => updateActive({ subtitle: e.target.value })}
+                rows={2}
+                placeholder="Subtitulo"
+                className="input-field text-xs resize-none mb-3"
               />
-            </div>
 
-            {/* Font family */}
-            <label className="text-[10px] font-semibold text-text-muted uppercase mb-1 block">Fonte</label>
-            <div className="grid grid-cols-2 gap-1 mb-3">
-              {FONTS.map((f) => (
-                <button
-                  key={f.id}
-                  onClick={() => updateActive({ fontFamily: f.id })}
-                  style={{ fontFamily: `'${f.id}', sans-serif` }}
-                  className={`text-[10px] py-1.5 rounded border font-bold ${
-                    active.fontFamily === f.id ? 'bg-primary text-white border-primary' : 'bg-white border-border text-text-secondary hover:border-primary/50'
-                  }`}
-                >
-                  {f.label}
-                </button>
-              ))}
-            </div>
+              {/* Position grid */}
+              <label className="text-[10px] font-semibold text-text-muted uppercase mb-1 block">Posicao</label>
+              <div className="grid grid-cols-3 gap-1 mb-3">
+                {POSITIONS.map((p) => (
+                  <button
+                    key={p.id}
+                    onClick={() => updateActive({ position: p.id })}
+                    className={`text-[9px] py-1.5 rounded border ${
+                      active.position === p.id ? 'bg-primary text-white border-primary' : 'bg-white border-border text-text-secondary hover:border-primary/50'
+                    }`}
+                  >
+                    {p.label}
+                  </button>
+                ))}
+              </div>
 
-            {/* Weight */}
-            <label className="text-[10px] font-semibold text-text-muted uppercase mb-1 block">Peso</label>
-            <div className="grid grid-cols-5 gap-1 mb-3">
-              {[300, 400, 600, 700, 900].map((w) => (
-                <button
-                  key={w}
-                  onClick={() => updateActive({ fontWeight: w })}
-                  className={`text-[10px] py-1 rounded border ${
-                    active.fontWeight === w ? 'bg-primary text-white border-primary' : 'bg-white border-border text-text-secondary'
-                  }`}
-                >
-                  {w}
-                </button>
-              ))}
-            </div>
-
-            {/* Color */}
-            <label className="text-[10px] font-semibold text-text-muted uppercase mb-1 block">Cor</label>
-            <div className="grid grid-cols-4 gap-1.5">
-              {COLORS.map((c) => (
-                <button
-                  key={c}
-                  onClick={() => updateActive({ titleColor: c })}
-                  style={{ background: c }}
-                  className={`h-7 rounded border-2 ${active.titleColor === c ? 'border-primary' : 'border-border'}`}
-                  title={c}
+              {/* Title size */}
+              <div className="mb-2">
+                <label className="text-[10px] font-semibold text-text-muted uppercase">Titulo: {active.titleSize}px</label>
+                <input
+                  type="range"
+                  min={32}
+                  max={140}
+                  step={2}
+                  value={active.titleSize}
+                  onChange={(e) => updateActive({ titleSize: Number(e.target.value) })}
+                  className="w-full"
                 />
-              ))}
+              </div>
+
+              {/* Subtitle size */}
+              <div className="mb-3">
+                <label className="text-[10px] font-semibold text-text-muted uppercase">Subtitulo: {active.subtitleSize}px</label>
+                <input
+                  type="range"
+                  min={14}
+                  max={56}
+                  step={2}
+                  value={active.subtitleSize}
+                  onChange={(e) => updateActive({ subtitleSize: Number(e.target.value) })}
+                  className="w-full"
+                />
+              </div>
+
+              {/* Font family */}
+              <label className="text-[10px] font-semibold text-text-muted uppercase mb-1 block">Fonte</label>
+              <div className="grid grid-cols-2 gap-1 mb-3">
+                {FONTS.map((f) => (
+                  <button
+                    key={f.id}
+                    onClick={() => updateActive({ fontFamily: f.id })}
+                    style={{ fontFamily: `'${f.id}', sans-serif` }}
+                    className={`text-[10px] py-1.5 rounded border font-bold ${
+                      active.fontFamily === f.id ? 'bg-primary text-white border-primary' : 'bg-white border-border text-text-secondary hover:border-primary/50'
+                    }`}
+                  >
+                    {f.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Weight */}
+              <label className="text-[10px] font-semibold text-text-muted uppercase mb-1 block">Peso</label>
+              <div className="grid grid-cols-5 gap-1 mb-3">
+                {[300, 400, 600, 700, 900].map((w) => (
+                  <button
+                    key={w}
+                    onClick={() => updateActive({ fontWeight: w })}
+                    className={`text-[10px] py-1 rounded border ${
+                      active.fontWeight === w ? 'bg-primary text-white border-primary' : 'bg-white border-border text-text-secondary'
+                    }`}
+                  >
+                    {w}
+                  </button>
+                ))}
+              </div>
+
+              {/* Color */}
+              <label className="text-[10px] font-semibold text-text-muted uppercase mb-1 block">Cor</label>
+              <div className="grid grid-cols-4 gap-1.5">
+                {COLORS.map((c) => (
+                  <button
+                    key={c}
+                    onClick={() => updateActive({ titleColor: c })}
+                    style={{ background: c }}
+                    className={`h-7 rounded border-2 ${active.titleColor === c ? 'border-primary' : 'border-border'}`}
+                    title={c}
+                  />
+                ))}
+              </div>
             </div>
-          </div>
+          ) : (
+            <div className="card p-4">
+              <h3 className="text-[11px] font-bold text-text-muted uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                <Code2 className="w-3.5 h-3.5" /> HTML / Tailwind
+              </h3>
+              <p className="text-[10px] text-text-muted mb-2">
+                HTML livre renderizado por cima do fundo. Usa Tailwind via CDN.
+                Se brand aplicado, use <code className="text-primary">var(--brand-primary)</code>, <code className="text-primary">var(--brand-secondary)</code>, etc.
+              </p>
+              <textarea
+                value={active.htmlContent}
+                onChange={(e) => updateActive({ htmlContent: e.target.value })}
+                rows={16}
+                spellCheck={false}
+                className="input-field text-[11px] font-mono resize-y leading-relaxed"
+                placeholder={`<div class="flex items-center justify-center w-full h-full p-16 text-center">
+  <h1 class="text-7xl font-black text-white" style="text-shadow: 0 6px 40px rgba(0,0,0,0.6);">
+    Seu titulo aqui
+  </h1>
+</div>`}
+              />
+              <p className="text-[10px] text-text-muted mt-1.5">
+                So o conteudo do body (sem html/head/body). Use w-full h-full no container raiz.
+              </p>
+            </div>
+          )}
         </div>
       </div>
     </div>
