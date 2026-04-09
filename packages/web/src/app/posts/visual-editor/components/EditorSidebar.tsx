@@ -658,20 +658,38 @@ export function EditorSidebar({
           {/* Title font family */}
           <div>
             <span className={labelClass}>FONTE DO TITULO</span>
-            <div className="grid grid-cols-2 gap-1 mt-1.5">
-              {FONTS.map((f) => (
-                <button
-                  key={f.id}
-                  onClick={() => updateActive({ fontFamily: f.id })}
-                  className={`text-xs py-1.5 px-2 rounded border transition-all ${
-                    active.fontFamily === f.id ? btnActive : btnInactive
-                  }`}
-                  style={{ fontFamily: f.id }}
-                >
-                  {f.label}
-                </button>
-              ))}
-            </div>
+            <select
+              value={active.fontFamily}
+              onChange={(e) => updateActive({ fontFamily: e.target.value })}
+              className="input-field text-xs w-full mt-1"
+              style={{ fontFamily: active.fontFamily }}
+            >
+              <optgroup label="Sans-serif">
+                {FONTS.filter((_, i) => i < 30).map((f) => (
+                  <option key={f.id} value={f.id} style={{ fontFamily: f.id }}>{f.label}</option>
+                ))}
+              </optgroup>
+              <optgroup label="Serif">
+                {FONTS.filter((_, i) => i >= 30 && i < 39).map((f) => (
+                  <option key={f.id} value={f.id} style={{ fontFamily: f.id }}>{f.label}</option>
+                ))}
+              </optgroup>
+              <optgroup label="Display">
+                {FONTS.filter((_, i) => i >= 39 && i < 49).map((f) => (
+                  <option key={f.id} value={f.id} style={{ fontFamily: f.id }}>{f.label}</option>
+                ))}
+              </optgroup>
+              <optgroup label="Handwriting">
+                {FONTS.filter((_, i) => i >= 49 && i < 56).map((f) => (
+                  <option key={f.id} value={f.id} style={{ fontFamily: f.id }}>{f.label}</option>
+                ))}
+              </optgroup>
+              <optgroup label="Monospace">
+                {FONTS.filter((_, i) => i >= 56).map((f) => (
+                  <option key={f.id} value={f.id} style={{ fontFamily: f.id }}>{f.label}</option>
+                ))}
+              </optgroup>
+            </select>
           </div>
 
           {/* Title font weight */}
@@ -745,20 +763,38 @@ export function EditorSidebar({
           {/* Subtitle font family */}
           <div>
             <span className={labelClass}>FONTE DO SUBTITULO</span>
-            <div className="grid grid-cols-2 gap-1 mt-1.5">
-              {FONTS.map((f) => (
-                <button
-                  key={f.id}
-                  onClick={() => updateActive({ subtitleFontFamily: f.id })}
-                  className={`text-xs py-1.5 px-2 rounded border transition-all ${
-                    active.subtitleFontFamily === f.id ? btnActive : btnInactive
-                  }`}
-                  style={{ fontFamily: f.id }}
-                >
-                  {f.label}
-                </button>
-              ))}
-            </div>
+            <select
+              value={active.subtitleFontFamily}
+              onChange={(e) => updateActive({ subtitleFontFamily: e.target.value })}
+              className="input-field text-xs w-full mt-1"
+              style={{ fontFamily: active.subtitleFontFamily }}
+            >
+              <optgroup label="Sans-serif">
+                {FONTS.filter((_, i) => i < 30).map((f) => (
+                  <option key={f.id} value={f.id} style={{ fontFamily: f.id }}>{f.label}</option>
+                ))}
+              </optgroup>
+              <optgroup label="Serif">
+                {FONTS.filter((_, i) => i >= 30 && i < 39).map((f) => (
+                  <option key={f.id} value={f.id} style={{ fontFamily: f.id }}>{f.label}</option>
+                ))}
+              </optgroup>
+              <optgroup label="Display">
+                {FONTS.filter((_, i) => i >= 39 && i < 49).map((f) => (
+                  <option key={f.id} value={f.id} style={{ fontFamily: f.id }}>{f.label}</option>
+                ))}
+              </optgroup>
+              <optgroup label="Handwriting">
+                {FONTS.filter((_, i) => i >= 49 && i < 56).map((f) => (
+                  <option key={f.id} value={f.id} style={{ fontFamily: f.id }}>{f.label}</option>
+                ))}
+              </optgroup>
+              <optgroup label="Monospace">
+                {FONTS.filter((_, i) => i >= 56).map((f) => (
+                  <option key={f.id} value={f.id} style={{ fontFamily: f.id }}>{f.label}</option>
+                ))}
+              </optgroup>
+            </select>
           </div>
 
           {/* Subtitle font weight */}
