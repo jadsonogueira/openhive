@@ -205,16 +205,35 @@ export default function VisualEditorPage() {
     setMessage('');
     try {
       const total = slides.length;
-      const updatedSlides = slides.map((s, i) => ({ ...s, slideNumber: i + 1, totalSlides: total }));
 
-      const editorState = { slides: updatedSlides, brandId, aspectRatio, globalStyle };
+      // Render all slides that don't have a renderedUrl yet
+      setMessage('Renderizando slides...');
+      const finalSlides: SlideState[] = [];
+      for (let i = 0; i < slides.length; i++) {
+        const slide = { ...slides[i], slideNumber: i + 1, totalSlides: total };
+        if (slide.renderedUrl) {
+          finalSlides.push(slide);
+        } else {
+          setMessage(`Renderizando slide ${i + 1} de ${total}...`);
+          try {
+            const url = await renderSlide(slide);
+            finalSlides.push({ ...slide, renderedUrl: url });
+          } catch {
+            // If render fails, keep slide without renderedUrl
+            finalSlides.push(slide);
+          }
+        }
+      }
+      setSlides(finalSlides);
+
+      const editorState = { slides: finalSlides, brandId, aspectRatio, globalStyle };
       const hashtagList = hashtags.split(',').map((h) => h.trim()).filter(Boolean);
 
-      // Best image per slide: renderedUrl > backgroundUrl > empty
-      const slideImages = updatedSlides.map((s) => s.renderedUrl || s.backgroundUrl || '');
+      // Use rendered images (composed with text/overlay), fallback to background
+      const slideImages = finalSlides.map((s) => s.renderedUrl || s.backgroundUrl || '');
       const coverUrl = slideImages.find((u) => u) || '';
       const validImages = slideImages.filter((u) => u);
-      const isCarousel = updatedSlides.length >= 2;
+      const isCarousel = finalSlides.length >= 2;
 
       if (currentPostId) {
         const updatePayload: Record<string, unknown> = {
@@ -252,7 +271,6 @@ export default function VisualEditorPage() {
         }
         setMessage(action === 'schedule' ? 'Post agendado!' : 'Rascunho salvo!');
       }
-      setSlides(updatedSlides);
       setMessageType('success');
     } catch (e: any) { setMessage(e.message); setMessageType('error'); }
     setSavingPost(false);
