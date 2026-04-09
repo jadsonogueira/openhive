@@ -281,101 +281,133 @@ export default function VisualEditorPage() {
       />
 
       {/* ── Canvas Area ── */}
-      <div className="mr-[340px]">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-3">
-          <div>
-            <Link href="/posts" className="text-xs text-text-secondary hover:text-primary inline-flex items-center gap-1 mb-1">
+      <div className="mr-[340px] flex flex-col h-[calc(100vh-6rem)]">
+        {/* Header bar */}
+        <div className="flex items-center justify-between mb-3 flex-shrink-0">
+          <div className="flex items-center gap-4">
+            <Link href="/posts" className="text-xs text-text-secondary hover:text-primary inline-flex items-center gap-1">
               <ChevronLeft className="w-3.5 h-3.5" /> Voltar
             </Link>
-            <h1 className="text-page-title text-text-primary flex items-center gap-3">
+            <h1 className="text-[20px] font-bold text-text-primary flex items-center gap-2">
               Editor Visual
-              {currentPostId && <span className="text-[11px] font-semibold px-2 py-1 rounded-badge bg-primary/10 text-primary">EDITANDO</span>}
+              {currentPostId && <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-primary/10 text-primary">EDITANDO</span>}
               {loadingPost && <Loader2 className="w-4 h-4 animate-spin text-primary" />}
             </h1>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="flex items-center bg-bg-main rounded-lg p-0.5">
-              {(['1:1', '4:5', '9:16'] as AspectRatio[]).map((ar) => (
-                <button key={ar} onClick={() => setAspectRatio(ar)}
-                  className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${aspectRatio === ar ? 'bg-bg-card text-primary shadow-sm' : 'text-text-muted'}`}
-                >{ar}</button>
-              ))}
+          <div className="flex items-center gap-3">
+            {/* Formato */}
+            <div className="flex items-center gap-1 text-[11px] text-text-muted font-semibold">
+              Formato
+              <div className="flex items-center bg-bg-main rounded-lg p-0.5 ml-1">
+                {(['1:1', '4:5', '9:16'] as AspectRatio[]).map((ar) => (
+                  <button key={ar} onClick={() => setAspectRatio(ar)}
+                    className={`px-2.5 py-1 rounded-md text-[11px] font-semibold transition-all ${aspectRatio === ar ? 'bg-bg-card text-primary shadow-sm' : 'text-text-muted hover:text-text-secondary'}`}
+                  >{ar === '1:1' ? 'Quadrado' : ar === '4:5' ? 'Carrossel' : 'Stories'}</button>
+                ))}
+              </div>
+            </div>
+            {/* Slide navigation */}
+            <div className="flex items-center gap-2 text-[12px] text-text-secondary font-semibold">
+              <button onClick={() => setActiveIdx(Math.max(0, activeIdx - 1))} disabled={activeIdx === 0}
+                className="w-7 h-7 rounded-lg border border-border flex items-center justify-center hover:bg-bg-card-hover disabled:opacity-30 transition-all">
+                <ChevronLeft className="w-3.5 h-3.5" />
+              </button>
+              <span>Slide <span className="text-text-primary">{activeIdx + 1}</span> de {slides.length}</span>
+              <button onClick={() => setActiveIdx(Math.min(slides.length - 1, activeIdx + 1))} disabled={activeIdx >= slides.length - 1}
+                className="w-7 h-7 rounded-lg border border-border flex items-center justify-center hover:bg-bg-card-hover disabled:opacity-30 transition-all rotate-180">
+                <ChevronLeft className="w-3.5 h-3.5" />
+              </button>
+              <button onClick={() => addSlide('content')}
+                className="w-7 h-7 rounded-lg border border-border flex items-center justify-center hover:bg-primary/10 hover:border-primary hover:text-primary transition-all text-text-muted">
+                <Plus className="w-3.5 h-3.5" />
+              </button>
             </div>
           </div>
         </div>
 
-        {/* Slide thumbnails */}
-        <div className="card p-3 overflow-x-auto mb-3">
-          <div className="flex items-start gap-3 min-w-min">
-            {slides.map((slide, idx) => (
-              <div key={slide.id} onClick={() => setActiveIdx(idx)}
-                className={`relative ${aspectClass} w-36 flex-shrink-0 rounded-xl overflow-hidden cursor-pointer border-2 transition-all ${
-                  idx === activeIdx ? 'border-primary shadow-lg scale-105' : 'border-border hover:border-primary/50'
-                }`}
-                style={{
-                  backgroundColor: slide.slideBgColor || '#1a1a2e',
-                  backgroundImage: slide.backgroundUrl ? `url('${slide.backgroundUrl}')` : undefined,
-                  backgroundPosition: `${slide.backgroundX ?? 50}% ${slide.backgroundY ?? 50}%`,
-                  backgroundSize: `${slide.backgroundZoom ?? 100}%`,
-                }}
-              >
-                <div className="absolute inset-0" style={{ background: `rgba(0,0,0,${slide.overlayOpacity})` }} />
-                <div className="absolute inset-0 flex items-center justify-center p-2 text-center">
-                  <div>
-                    {slide.stat && <p className="text-white text-sm font-black" style={{ textShadow: '0 2px 8px rgba(0,0,0,.8)' }}>{slide.stat}</p>}
-                    <p className="text-white text-[10px] font-bold leading-tight" style={{ textShadow: '0 2px 8px rgba(0,0,0,.8)' }}>{slide.title}</p>
+        {/* Slides horizontal strip — all slides side by side */}
+        <div className="flex-1 overflow-x-auto overflow-y-hidden">
+          <div className="flex items-start gap-5 h-full min-w-min py-2 px-1">
+            {slides.map((slide, idx) => {
+              const isActive = idx === activeIdx;
+              const previewH = aspectRatio === '9:16' ? '1920px' : aspectRatio === '4:5' ? '1350px' : '1080px';
+              const scaleRatio = aspectRatio === '9:16' ? 0.38 : aspectRatio === '4:5' ? 0.44 : 0.5;
+              const cardW = aspectRatio === '9:16' ? 'w-[410px]' : aspectRatio === '4:5' ? 'w-[475px]' : 'w-[540px]';
+
+              return (
+                <div key={slide.id} onClick={() => setActiveIdx(idx)}
+                  className={`flex-shrink-0 ${cardW} cursor-pointer transition-all duration-200 ${isActive ? 'scale-[1.02]' : 'opacity-70 hover:opacity-90'}`}
+                >
+                  {/* Slide card */}
+                  <div className={`${aspectClass} w-full rounded-xl overflow-hidden relative shadow-lg border-2 transition-all ${
+                    isActive ? 'border-primary shadow-primary/20' : 'border-transparent hover:border-border'
+                  }`}
+                    style={{
+                      backgroundColor: slide.slideBgColor || '#000000',
+                      backgroundImage: slide.backgroundUrl ? `url('${slide.backgroundUrl}')` : undefined,
+                      backgroundPosition: `${slide.backgroundX ?? 50}% ${slide.backgroundY ?? 50}%`,
+                      backgroundSize: `${slide.backgroundZoom ?? 100}%`,
+                    }}
+                  >
+                    {/* Overlay */}
+                    <div className="absolute inset-0" style={{
+                      background: slide.overlayStyle === 'gradient'
+                        ? `linear-gradient(to bottom, transparent 20%, rgba(0,0,0,${slide.overlayOpacity}))`
+                        : slide.overlayStyle === 'vignette'
+                        ? `radial-gradient(ellipse at center, transparent 30%, rgba(0,0,0,${slide.overlayOpacity}) 100%)`
+                        : `rgba(0,0,0,${slide.overlayOpacity})`
+                    }} />
+
+                    {/* Live preview content */}
+                    <div className="absolute inset-0" style={{
+                        transform: `scale(${scaleRatio})`, transformOrigin: 'top left',
+                        width: '1080px',
+                        height: previewH,
+                      }}
+                      dangerouslySetInnerHTML={{ __html: buildSlideHtml(
+                        { ...slide, slideNumber: idx + 1, totalSlides: slides.length },
+                        { aspectRatio, brandLogoUrl, globalStyle }
+                      ) }}
+                    />
+
+                    {/* Slide number badge */}
+                    <div className={`absolute top-3 left-3 px-2 py-1 rounded-md text-[11px] font-bold ${
+                      isActive ? 'bg-primary text-white' : 'bg-black/50 text-white'
+                    }`}>
+                      {idx + 1}
+                    </div>
+
+                    {/* Rendered badge */}
+                    {slide.renderedUrl && (
+                      <div className="absolute top-3 right-10 bg-emerald-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded">OK</div>
+                    )}
+
+                    {/* Delete button */}
+                    {slides.length > 1 && (
+                      <button onClick={(e) => { e.stopPropagation(); removeSlide(slide.id); }}
+                        className="absolute top-3 right-3 w-6 h-6 bg-black/50 hover:bg-red-500 rounded-md text-white flex items-center justify-center transition-colors">
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
                   </div>
                 </div>
-                <div className="absolute top-1 left-1 bg-black/60 text-white text-[9px] font-bold px-1.5 py-0.5 rounded">{idx + 1}</div>
-                {slide.renderedUrl && <div className="absolute top-1 right-1 bg-emerald-500 text-white text-[7px] font-bold px-1 py-0.5 rounded">OK</div>}
-                <button onClick={(e) => { e.stopPropagation(); removeSlide(slide.id); }}
-                  className="absolute bottom-1 right-1 w-5 h-5 bg-red-500/80 hover:bg-red-500 rounded text-white flex items-center justify-center">
-                  <Trash2 className="w-3 h-3" />
-                </button>
+              );
+            })}
+
+            {/* Add slide button */}
+            <div className={`flex-shrink-0 ${aspectRatio === '9:16' ? 'w-[410px]' : aspectRatio === '4:5' ? 'w-[475px]' : 'w-[540px]'}`}>
+              <div className={`${aspectClass} w-full rounded-xl border-2 border-dashed border-border hover:border-primary text-text-muted hover:text-primary flex flex-col items-center justify-center gap-2 transition-all cursor-pointer`}
+                onClick={() => addSlide('content')}>
+                <Plus className="w-8 h-8" />
+                <span className="text-sm font-semibold">Novo slide</span>
               </div>
-            ))}
-            <div className={`${aspectClass} w-36 flex-shrink-0 rounded-xl border-2 border-dashed border-border hover:border-primary text-text-muted hover:text-primary flex flex-col items-center justify-center gap-1 transition-all cursor-pointer`}
-              onClick={() => addSlide('content')}>
-              <Plus className="w-5 h-5" />
-              <span className="text-[10px] font-semibold">Novo slide</span>
             </div>
           </div>
         </div>
 
-        {/* Big preview */}
-        <div className="card p-4">
-          <div className={`${aspectClass} w-full max-w-[600px] mx-auto rounded-xl overflow-hidden relative shadow-xl`}
-            style={{
-              backgroundColor: active.slideBgColor || '#1a1a2e',
-              backgroundImage: active.backgroundUrl ? `url('${active.backgroundUrl}')` : undefined,
-              backgroundPosition: `${active.backgroundX ?? 50}% ${active.backgroundY ?? 50}%`,
-              backgroundSize: `${active.backgroundZoom ?? 100}%`,
-            }}
-          >
-            <div className="absolute inset-0" style={{
-              background: active.overlayStyle === 'gradient'
-                ? `linear-gradient(to bottom, transparent 20%, rgba(0,0,0,${active.overlayOpacity}))`
-                : active.overlayStyle === 'vignette'
-                ? `radial-gradient(ellipse at center, transparent 30%, rgba(0,0,0,${active.overlayOpacity}) 100%)`
-                : `rgba(0,0,0,${active.overlayOpacity})`
-            }} />
-            {/* Live preview */}
-            <div className="absolute inset-0" style={{
-                transform: 'scale(0.556)', transformOrigin: 'top left',
-                width: '1080px',
-                height: aspectRatio === '9:16' ? '1920px' : aspectRatio === '4:5' ? '1350px' : '1080px',
-              }}
-              dangerouslySetInnerHTML={{ __html: buildSlideHtml(active, { aspectRatio, brandLogoUrl, globalStyle }) }}
-            />
-          </div>
-          <p className="text-center text-xs text-text-muted mt-3">
-            Slide {activeIdx + 1} / {slides.length} — {activeTemplate.name} — {active.renderedUrl ? 'renderizado' : 'preview ao vivo'}
-          </p>
-        </div>
-
+        {/* Message */}
         {message && (
-          <div className={`mt-3 px-4 py-3 rounded-btn border text-sm ${messageType === 'success' ? 'bg-emerald-500/10 border-emerald-500/20 text-status-published' : 'bg-red-500/10 border-red-500/20 text-status-failed'}`}>
+          <div className={`mt-2 px-4 py-2 rounded-lg border text-sm flex-shrink-0 ${messageType === 'success' ? 'bg-emerald-500/10 border-emerald-500/20 text-status-published' : 'bg-red-500/10 border-red-500/20 text-status-failed'}`}>
             {message}
           </div>
         )}

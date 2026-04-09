@@ -225,7 +225,7 @@ export function emptySlide(idx: number, tpl: TemplateId = idx === 0 ? 'hero' : '
     backgroundZoom: 100,
     overlayOpacity: 0.4,
     overlayStyle: 'base',
-    slideBgColor: '#1a1a2e',
+    slideBgColor: '#000000',
     slideBgPattern: 'none',
     label: tpl === 'content' || tpl === 'list' ? `Passo ${idx}` : tpl === 'cta' ? 'Proximo passo' : '',
     title: idx === 0 ? 'Titulo do carrossel' : `Titulo do slide ${idx + 1}`,
