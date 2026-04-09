@@ -199,9 +199,9 @@ export function EditorSidebar({
   };
 
   return (
-    <div className="fixed right-0 top-0 h-full w-[340px] bg-bg-card border-l border-border flex flex-col z-40">
+    <div className="fixed right-0 top-0 h-full w-[340px] bg-bg-card border-l border-border flex flex-col z-40 pt-6">
       {/* Scrollable content area */}
-      <div className="flex-1 overflow-y-auto pb-32">
+      <div className="flex-1 overflow-y-auto pb-32 px-4">
         {/* ── 1. Conteudo — Slide N ── */}
         <CollapsibleSection
           title={`Conteudo — Slide ${activeIdx + 1}`}
