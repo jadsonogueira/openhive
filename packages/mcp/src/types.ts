@@ -7,6 +7,7 @@ export interface CreatePostInput {
   scheduled_at?: string;
   hashtags?: string[];
   tone?: string;
+  editor_state?: Record<string, unknown>;
 }
 
 export interface AddImageToPostInput {

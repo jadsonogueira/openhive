@@ -62,9 +62,10 @@ function registerTools(server: McpServer) {
       scheduled_at: z.string().optional().describe('Data/hora para agendar (ISO 8601)'),
       hashtags: z.array(z.string()).optional().describe('Lista de hashtags'),
       tone: z.string().optional().describe('Tom: educativo, inspirador, humor, noticia'),
+      editor_state: z.record(z.unknown()).optional().describe('Estado estruturado dos slides para o Editor Visual da web. Formato: { slides: SlideState[], brandId?, aspectRatio?, globalStyle? }. Quando presente, o post pode ser aberto e editado no visual editor com titulo, subtitulo, fundo, posicao etc.'),
     },
-    async ({ caption, image_prompt, image_prompts, image_urls, aspect_ratio, scheduled_at, hashtags, tone }) => {
-      const result = await createPost({ caption, image_prompt, image_prompts, image_urls, aspect_ratio, scheduled_at, hashtags, tone });
+    async ({ caption, image_prompt, image_prompts, image_urls, aspect_ratio, scheduled_at, hashtags, tone, editor_state }) => {
+      const result = await createPost({ caption, image_prompt, image_prompts, image_urls, aspect_ratio, scheduled_at, hashtags, tone, editor_state });
       return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
     },
   );

@@ -149,7 +149,7 @@ export async function updatePost(req: AuthRequest, res: Response) {
     const existing = await prisma.post.findFirst({ where: { id, userId } });
     if (!existing) { res.status(404).json({ success: false, error: 'Post not found' }); return; }
 
-    const { scheduledAt, ...otherData } = req.body;
+    const { scheduledAt, images, ...otherData } = req.body;
     const updateData: Record<string, unknown> = { ...otherData };
 
     // Handle rescheduling
@@ -167,6 +167,23 @@ export async function updatePost(req: AuthRequest, res: Response) {
         await schedulePost(id, newDate);
         updateData.status = 'SCHEDULED';
       }
+    }
+
+    // Handle carousel images update: delete old, create new
+    if (images && Array.isArray(images) && images.length >= 2) {
+      await prisma.postImage.deleteMany({ where: { postId: id } });
+      await prisma.postImage.createMany({
+        data: images.map((img: any, idx: number) => ({
+          postId: id,
+          imageUrl: img.imageUrl,
+          minioKey: img.minioKey || null,
+          order: img.order ?? idx,
+          source: img.source || 'WEB',
+          prompt: img.prompt || null,
+        })),
+      });
+      updateData.isCarousel = true;
+      if (!updateData.imageUrl) updateData.imageUrl = images[0].imageUrl;
     }
 
     await prisma.post.update({ where: { id }, data: updateData });

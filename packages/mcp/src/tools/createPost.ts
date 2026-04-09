@@ -60,6 +60,7 @@ export async function createPost(input: CreatePostInput) {
     isCarousel,
     ...(isCarousel ? { images } : { imageUrl }),
     ...(input.scheduled_at ? { scheduledAt: input.scheduled_at } : {}),
+    ...(input.editor_state ? { editorState: input.editor_state } : {}),
   })) as any;
 
   return {

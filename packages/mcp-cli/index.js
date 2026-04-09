@@ -53,7 +53,7 @@ async function apiRequest(path, options = {}) {
   return data.data;
 }
 
-const server = new McpServer({ name: 'openhive', version: '1.6.0' });
+const server = new McpServer({ name: 'openhive', version: '1.7.1' });
 
 // ── Posts ──
 
@@ -69,6 +69,7 @@ server.tool(
     scheduled_at: z.string().optional().describe('Data/hora para agendar (ISO 8601)'),
     hashtags: z.array(z.string()).optional().describe('Lista de hashtags'),
     tone: z.string().optional().describe('Tom da legenda: educativo, inspirador, humor, noticia'),
+    editor_state: z.object({}).passthrough().optional().describe('Estado estruturado dos slides para o Editor Visual da web. Formato: { slides: SlideState[], brandId?, aspectRatio?, globalStyle? }. Quando presente, o post pode ser aberto e editado no visual editor.'),
   },
   async (input) => {
     let imageUrl;
@@ -139,6 +140,7 @@ server.tool(
       isCarousel,
       ...(isCarousel ? { images } : { imageUrl }),
       ...(input.scheduled_at ? { scheduledAt: input.scheduled_at } : {}),
+      ...(input.editor_state ? { editorState: input.editor_state } : {}),
     };
 
     const post = await apiRequest('/api/posts', {

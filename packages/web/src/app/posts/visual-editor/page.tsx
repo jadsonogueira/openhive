@@ -300,6 +300,9 @@ export default function VisualEditorPage() {
           mediaType: isCarousel ? 'CAROUSEL' : 'IMAGE',
         };
         if (coverUrl) updatePayload.imageUrl = coverUrl;
+        if (isCarousel && validImages.length >= 2) {
+          updatePayload.images = validImages.map((u, i) => ({ imageUrl: u, order: i }));
+        }
         if (action === 'schedule' && scheduledAt) {
           updatePayload.scheduledAt = new Date(scheduledAt).toISOString();
         }
