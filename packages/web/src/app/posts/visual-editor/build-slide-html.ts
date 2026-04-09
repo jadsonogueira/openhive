@@ -120,6 +120,11 @@ export function buildSlideHtml(
     : '';
 
   const corners: string[] = [];
+  // Check if bottom-right icon is active
+  const hasBottomRightIcon = gs.bottomRightIcon && gs.bottomRightIcon !== 'none' && gs.showCorners;
+  const bottomRightIconSvg = hasBottomRightIcon ? buildCornerIconSvg(gs.bottomRightIcon!, color, cfs + 4) : '';
+  const hasBottomRightText = !!(s.cornerBottomRight && s.cornerBottomRightEnabled);
+
   if (gs.showCorners) {
     if (s.cornerTopLeft && s.cornerTopLeftEnabled)
       corners.push(`<div style="position:absolute;top:${ci}px;left:${edgeDist}px;font-size:${cfs}px;color:${color};opacity:${cop};font-family:${font};${shadowSm}${cornerShadow}">${escHtml(s.cornerTopLeft)}</div>`);
@@ -127,17 +132,19 @@ export function buildSlideHtml(
       corners.push(`<div style="position:absolute;top:${ci}px;right:${edgeDist}px;font-size:${cfs}px;color:${color};opacity:${cop};font-family:${font};${shadowSm}${cornerShadow}">${escHtml(s.cornerTopRight)}</div>`);
     if (s.cornerBottomLeft && s.cornerBottomLeftEnabled)
       corners.push(`<div style="position:absolute;bottom:${ci}px;left:${edgeDist}px;font-size:${cfs}px;color:${color};opacity:${cop};font-family:${font};${shadowSm}${cornerShadow}">${escHtml(s.cornerBottomLeft)}</div>`);
-    if (s.cornerBottomRight && s.cornerBottomRightEnabled)
+
+    // Bottom-right: combine text + icon in a flex row if both exist
+    if (hasBottomRightText && bottomRightIconSvg) {
+      corners.push(`<div style="position:absolute;bottom:${ci}px;right:${edgeDist}px;display:flex;align-items:center;gap:8px;opacity:${cop};"><span style="font-size:${cfs}px;color:${color};font-family:${font};${shadowSm}${cornerShadow}">${escHtml(s.cornerBottomRight)}</span><span style="${cornerShadow}">${bottomRightIconSvg}</span></div>`);
+    } else if (hasBottomRightText) {
       corners.push(`<div style="position:absolute;bottom:${ci}px;right:${edgeDist}px;font-size:${cfs}px;color:${color};opacity:${cop};font-family:${font};${shadowSm}${cornerShadow}">${escHtml(s.cornerBottomRight)}</div>`);
+    }
   }
 
-  // Corner icon (bottom-right)
+  // Corner icon (bottom-right) — only render standalone if no bottom-right text
   let cornerIconHtml = '';
-  if (gs.bottomRightIcon && gs.bottomRightIcon !== 'none' && gs.showCorners) {
-    const iconSvg = buildCornerIconSvg(gs.bottomRightIcon, color, cfs + 4);
-    if (iconSvg) {
-      cornerIconHtml = `<div style="position:absolute;bottom:${ci}px;right:${edgeDist}px;opacity:${cop};${cornerShadow}">${iconSvg}</div>`;
-    }
+  if (hasBottomRightIcon && bottomRightIconSvg && !hasBottomRightText) {
+    cornerIconHtml = `<div style="position:absolute;bottom:${ci}px;right:${edgeDist}px;opacity:${cop};${cornerShadow}">${bottomRightIconSvg}</div>`;
   }
 
   // ── Brand logo ──

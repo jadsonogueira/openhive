@@ -180,7 +180,7 @@ export function EditorSidebar({
         if (imageType) {
           const blob = await item.getType(imageType);
           const url = URL.createObjectURL(blob);
-          updateActive({ customLogoUrl: url });
+          updateAllSlides({ customLogoUrl: url });
           return;
         }
       }
@@ -193,7 +193,7 @@ export function EditorSidebar({
     const file = e.target.files?.[0];
     if (file) {
       const url = URL.createObjectURL(file);
-      updateActive({ customLogoUrl: url });
+      updateAllSlides({ customLogoUrl: url });
     }
   };
 
@@ -1050,7 +1050,7 @@ export function EditorSidebar({
               <input
                 type="checkbox"
                 checked={active.showProfileBadge}
-                onChange={(e) => updateActive({ showProfileBadge: e.target.checked })}
+                onChange={(e) => updateAllSlides({ showProfileBadge: e.target.checked })}
                 className="accent-primary"
               />
               <span className="text-xs text-text-secondary">
@@ -1059,8 +1059,7 @@ export function EditorSidebar({
             </label>
             <button
               onClick={() => {
-                // Apply to all slides via updating active; parent handles propagation
-                updateActive({ showProfileBadge: !active.showProfileBadge });
+                updateAllSlides({ showProfileBadge: !active.showProfileBadge });
               }}
               className="text-[10px] py-1 px-2 rounded border border-border text-text-muted hover:bg-bg-hover transition-all"
             >
@@ -1078,7 +1077,7 @@ export function EditorSidebar({
                 <input
                   type="checkbox"
                   checked={active.showLogo}
-                  onChange={(e) => updateActive({ showLogo: e.target.checked })}
+                  onChange={(e) => updateAllSlides({ showLogo: e.target.checked })}
                   className="accent-primary"
                 />
                 <span className="text-xs text-text-secondary">
@@ -1087,7 +1086,7 @@ export function EditorSidebar({
               </label>
               <button
                 onClick={() => {
-                  updateActive({ showLogo: !active.showLogo });
+                  updateAllSlides({ showLogo: !active.showLogo });
                 }}
                 className="text-[10px] py-1 px-2 rounded border border-border text-text-muted hover:bg-bg-hover transition-all"
               >
@@ -1130,7 +1129,7 @@ export function EditorSidebar({
                   className="w-12 h-12 object-contain rounded border border-border bg-black/20"
                 />
                 <button
-                  onClick={() => updateActive({ customLogoUrl: '' })}
+                  onClick={() => updateAllSlides({ customLogoUrl: '' })}
                   className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white rounded-full flex items-center justify-center"
                 >
                   <X className="w-2.5 h-2.5" />
@@ -1151,7 +1150,7 @@ export function EditorSidebar({
                 ] as { id: '' | 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right'; label: string }[]).map((lp) => (
                   <button
                     key={lp.id}
-                    onClick={() => updateActive({ logoPosition: lp.id })}
+                    onClick={() => updateAllSlides({ logoPosition: lp.id })}
                     className={`flex-1 text-[10px] py-1.5 rounded border transition-all ${
                       active.logoPosition === lp.id ? btnActive : btnInactive
                     }`}
