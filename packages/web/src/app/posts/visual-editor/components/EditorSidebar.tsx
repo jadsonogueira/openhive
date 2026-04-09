@@ -434,6 +434,53 @@ export function EditorSidebar({
               className="w-full mt-1 accent-primary"
             />
           </div>
+
+          {/* Flip H */}
+          <label className="flex items-center justify-between cursor-pointer">
+            <span className="text-[12px] text-text-primary">Espelhar horizontalmente</span>
+            <input
+              type="checkbox"
+              checked={active.backgroundFlipH || false}
+              onChange={(e) => updateActive({ backgroundFlipH: e.target.checked })}
+              className="w-4 h-4 rounded text-primary accent-primary"
+            />
+          </label>
+
+          {/* Opacity */}
+          <div>
+            <div className="flex items-center justify-between">
+              <span className={labelClass}>OPACIDADE %</span>
+              <span className="text-[10px] text-primary font-semibold">{active.backgroundOpacity ?? 100}</span>
+            </div>
+            <input
+              type="range"
+              min={0}
+              max={100}
+              value={active.backgroundOpacity ?? 100}
+              onChange={(e) => updateActive({ backgroundOpacity: Number(e.target.value) })}
+              className="w-full mt-1 accent-primary"
+            />
+          </div>
+
+          {/* Infinite Carousel */}
+          <div className="space-y-1.5">
+            <button
+              onClick={() => updateActive({ infiniteCarousel: !active.infiniteCarousel })}
+              className={`w-full py-2 px-3 rounded-lg border text-[12px] font-semibold flex items-center justify-center gap-2 transition-all ${
+                active.infiniteCarousel
+                  ? 'border-primary bg-primary/10 text-primary'
+                  : 'border-border text-text-secondary hover:border-primary/30'
+              }`}
+            >
+              <LayoutGrid className="w-4 h-4" />
+              {active.infiniteCarousel ? 'Carrossel Infinito (ativo)' : 'Carrossel Infinito'}
+            </button>
+            {active.infiniteCarousel && (
+              <p className="text-[10px] text-text-muted leading-relaxed">
+                Esta imagem se divide com o slide {activeIdx + 2 <= slides.length ? activeIdx + 2 : 1}. Use Posicao ↕ e Zoom % para ajustar.
+              </p>
+            )}
+          </div>
         </CollapsibleSection>
 
         {/* ── 3. Sombra / Overlay ── */}

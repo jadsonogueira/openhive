@@ -380,13 +380,22 @@ export default function VisualEditorPage() {
                   <div className={`w-full h-full rounded-xl overflow-hidden relative shadow-lg border-2 transition-all ${
                     isActive ? 'border-primary shadow-primary/20' : 'border-transparent hover:border-border'
                   }`}
-                    style={{
-                      backgroundColor: slide.slideBgColor || '#000000',
-                      backgroundImage: slide.backgroundUrl ? `url('${slide.backgroundUrl}')` : undefined,
-                      backgroundPosition: `${slide.backgroundX ?? 50}% ${slide.backgroundY ?? 50}%`,
-                      backgroundSize: `${slide.backgroundZoom ?? 100}%`,
-                    }}
+                    style={{ backgroundColor: slide.slideBgColor || '#000000' }}
                   >
+                    {/* Background image layer (supports opacity, flip, infinite carousel) */}
+                    {slide.backgroundUrl && (
+                      <div className="absolute inset-0" style={{
+                        backgroundImage: `url('${slide.backgroundUrl}')`,
+                        backgroundPosition: slide.infiniteCarousel
+                          ? `${(idx / Math.max(slides.length - 1, 1)) * 100}% ${slide.backgroundY ?? 50}%`
+                          : `${slide.backgroundX ?? 50}% ${slide.backgroundY ?? 50}%`,
+                        backgroundSize: slide.infiniteCarousel
+                          ? `${slides.length * 100}% ${slide.backgroundZoom ?? 100}%`
+                          : `${slide.backgroundZoom ?? 100}%`,
+                        opacity: (slide.backgroundOpacity ?? 100) / 100,
+                        transform: slide.backgroundFlipH ? 'scaleX(-1)' : undefined,
+                      }} />
+                    )}
                     {/* Overlay */}
                     <div className="absolute inset-0" style={{
                       background: slide.overlayStyle === 'gradient'

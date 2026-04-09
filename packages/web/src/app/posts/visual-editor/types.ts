@@ -32,6 +32,9 @@ export interface SlideState {
   backgroundX: number;
   backgroundY: number;
   backgroundZoom: number;
+  backgroundOpacity: number;
+  backgroundFlipH: boolean;
+  infiniteCarousel: boolean;
 
   // Overlay
   overlayOpacity: number;
@@ -223,6 +226,9 @@ export function emptySlide(idx: number, tpl: TemplateId = idx === 0 ? 'hero' : '
     backgroundX: 50,
     backgroundY: 50,
     backgroundZoom: 100,
+    backgroundOpacity: 100,
+    backgroundFlipH: false,
+    infiniteCarousel: false,
     overlayOpacity: 0.4,
     overlayStyle: 'base',
     slideBgColor: '#000000',
