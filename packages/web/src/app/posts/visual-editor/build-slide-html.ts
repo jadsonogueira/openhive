@@ -7,7 +7,7 @@ function escHtml(s: string) {
 export function getSafeZone(aspectRatio: string) {
   switch (aspectRatio) {
     case '9:16':
-      return { top: 270, bottom: 270, left: 80, right: 80, cornerInset: 280, indicatorBottom: 280 };
+      return { top: 140, bottom: 160, left: 80, right: 80, cornerInset: 80, indicatorBottom: 100 };
     case '4:5':
       return { top: 100, bottom: 170, left: 80, right: 80, cornerInset: 64, indicatorBottom: 64 };
     default:
