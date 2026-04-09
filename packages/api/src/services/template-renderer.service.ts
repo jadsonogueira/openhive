@@ -97,7 +97,7 @@ export async function renderComposedToImage(input: ComposedRenderInput): Promise
 <html><head>
 <meta charset="UTF-8">
 <script src="https://cdn.tailwindcss.com"></script>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Sora:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&family=Sora:wght@300;400;600;700;800;900&family=Space+Grotesk:wght@300;400;600;700&family=Outfit:wght@300;400;600;700;800;900&family=DM+Sans:wght@300;400;600;700&family=Manrope:wght@300;400;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;600;700;800&family=Bebas+Neue&family=Syne:wght@400;600;700;800&family=Raleway:wght@300;400;600;700;800;900&family=Playfair+Display:wght@400;600;700;900&family=Caveat:wght@400;700&family=Montserrat:wght@300;400;600;700;800;900&family=Urbanist:wght@300;400;600;700;800&display=swap" rel="stylesheet">
 <style>
   *{margin:0;padding:0;box-sizing:border-box;}
   ${rootStyle}

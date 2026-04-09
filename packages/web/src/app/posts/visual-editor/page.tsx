@@ -168,14 +168,67 @@ export default function VisualEditorPage() {
     setGenLoading(null);
   }
 
-  async function renderSlide(slide: SlideState): Promise<string> {
-    const html = buildSlideHtml(slide, { aspectRatio, brandLogoUrl, globalStyle });
+  function resolveBackground(slide: SlideState, idx: number): { url: string; posX: string; posY: string; size: string; opacity: number; flip: boolean } {
+    const prevSlide = idx > 0 ? slides[idx - 1] : null;
+    const isInfiniteLeft = slide.infiniteCarousel && slide.backgroundUrl;
+    const isInfiniteRight = prevSlide?.infiniteCarousel && prevSlide?.backgroundUrl;
+
+    if (isInfiniteLeft) {
+      return {
+        url: slide.backgroundUrl,
+        posX: '0%', posY: `${slide.backgroundY ?? 50}%`,
+        size: `200% ${slide.backgroundZoom ?? 100}%`,
+        opacity: (slide.backgroundOpacity ?? 100) / 100,
+        flip: slide.backgroundFlipH || false,
+      };
+    }
+    if (isInfiniteRight) {
+      return {
+        url: prevSlide!.backgroundUrl,
+        posX: '100%', posY: `${prevSlide!.backgroundY ?? 50}%`,
+        size: `200% ${prevSlide!.backgroundZoom ?? 100}%`,
+        opacity: (prevSlide!.backgroundOpacity ?? 100) / 100,
+        flip: prevSlide!.backgroundFlipH || false,
+      };
+    }
+    return {
+      url: slide.backgroundUrl,
+      posX: `${slide.backgroundX ?? 50}%`, posY: `${slide.backgroundY ?? 50}%`,
+      size: `${slide.backgroundZoom ?? 100}%`,
+      opacity: (slide.backgroundOpacity ?? 100) / 100,
+      flip: slide.backgroundFlipH || false,
+    };
+  }
+
+  async function renderSlide(slide: SlideState, idx: number): Promise<string> {
+    const contentHtml = buildSlideHtml(slide, { aspectRatio, brandLogoUrl, globalStyle });
+    const bg = resolveBackground(slide, idx);
+
+    // Build background as part of the HTML so we control position/zoom/flip/opacity
+    const bgHtml = bg.url
+      ? `<div style="position:absolute;inset:0;background-image:url('${bg.url}');background-position:${bg.posX} ${bg.posY};background-size:${bg.size};background-repeat:no-repeat;opacity:${bg.opacity};${bg.flip ? 'transform:scaleX(-1);' : ''}z-index:0;"></div>`
+      : '';
+
+    // Overlay
+    const overlayStyle = slide.overlayStyle || 'base';
+    const overlayBg = overlayStyle === 'gradient'
+      ? `linear-gradient(to bottom, transparent 20%, rgba(0,0,0,${slide.overlayOpacity}))`
+      : overlayStyle === 'vignette'
+      ? `radial-gradient(ellipse at center, transparent 30%, rgba(0,0,0,${slide.overlayOpacity}) 100%)`
+      : `rgba(0,0,0,${slide.overlayOpacity})`;
+    const overlayHtml = `<div style="position:absolute;inset:0;background:${overlayBg};z-index:1;"></div>`;
+
+    // Slide bg color
+    const slideBgColor = slide.slideBgColor || '#000000';
+
+    // Full HTML with bg baked in — pass NO backgroundUrl to API so it doesn't add its own
+    const fullHtml = `<div style="position:absolute;inset:0;background:${slideBgColor};">${bgHtml}${overlayHtml}</div><div style="position:absolute;inset:0;z-index:2;">${contentHtml}</div>`;
+
     const result = await api.generateComposed({
-      html,
-      backgroundUrl: slide.backgroundUrl || undefined,
-      backgroundPrompt: !slide.backgroundUrl ? (slide.backgroundPrompt || slide.title) : undefined,
+      html: fullHtml,
+      // Background is baked into the HTML — no separate backgroundUrl needed
       aspectRatio,
-      overlayOpacity: slide.overlayOpacity,
+      overlayOpacity: 0,
       brandId: brandId || undefined,
       applyBrand: !!brandId,
     });
@@ -190,7 +243,7 @@ export default function VisualEditorPage() {
       const updated: SlideState[] = [];
       for (let i = 0; i < slides.length; i++) {
         const slide = { ...slides[i], slideNumber: i + 1, totalSlides: total };
-        const url = await renderSlide(slide);
+        const url = await renderSlide(slide, i);
         updated.push({ ...slide, renderedUrl: url });
       }
       setSlides(updated);
@@ -216,7 +269,7 @@ export default function VisualEditorPage() {
         } else {
           setMessage(`Renderizando slide ${i + 1} de ${total}...`);
           try {
-            const url = await renderSlide(slide);
+            const url = await renderSlide(slide, i);
             finalSlides.push({ ...slide, renderedUrl: url });
           } catch {
             // If render fails, keep slide without renderedUrl

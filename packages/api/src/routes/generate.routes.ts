@@ -117,8 +117,6 @@ const composedSchema = z.object({
   // Brand integration
   brandId: z.string().optional(),
   applyBrand: z.boolean().optional(),
-}).refine((data) => data.backgroundPrompt || data.backgroundUrl, {
-  message: 'Either backgroundPrompt or backgroundUrl is required',
 });
 
 function getSizeFromAspect(ar?: string): { width: number; height: number } {
@@ -141,10 +139,8 @@ router.post('/composed', validate(composedSchema), async (req: AuthRequest, res:
       const bg = await generateImage({ prompt: backgroundPrompt, aspectRatio });
       bgUrl = bg.imageUrl;
     }
-    if (!bgUrl) {
-      res.status(400).json({ success: false, error: 'No background available' });
-      return;
-    }
+    // bgUrl can be empty — the HTML itself may contain the background
+    if (!bgUrl) bgUrl = '';
 
     // Step 2: Resolve brand fields if requested
     let brandPrimaryColor: string | undefined;
