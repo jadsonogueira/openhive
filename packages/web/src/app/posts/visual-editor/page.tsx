@@ -40,6 +40,8 @@ interface SlideState {
   cornerTopRight: string;
   cornerBottomLeft: string;
   cornerBottomRight: string;
+  // Logo position (uses brand logo)
+  logoPosition: '' | 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
   // Slide indicators
   showIndicators: boolean;
   totalSlides: number;
@@ -110,6 +112,7 @@ function emptySlide(idx: number, tpl: TemplateId = idx === 0 ? 'hero' : 'content
     cornerTopRight: '',
     cornerBottomLeft: '',
     cornerBottomRight: '',
+    logoPosition: '',
     showIndicators: true,
     totalSlides: 5,
     slideNumber: idx + 1,
@@ -123,46 +126,78 @@ function escHtml(s: string) {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
+// Aspect-ratio-aware safe zones (researched from Instagram guidelines 2025-2026)
+// Sources: zeely.ai, postplanify.com, outfy.com, carouselmaker.co
+function getSafeZone(aspectRatio: string) {
+  switch (aspectRatio) {
+    case '9:16': // Stories/Reels - UI covers 250px top + bottom
+      return { top: 250, bottom: 250, left: 60, right: 60, cornerInset: 260, indicatorBottom: 260 };
+    case '4:5':  // Portrait feed - base covered by like/save buttons
+      return { top: 80, bottom: 150, left: 60, right: 60, cornerInset: 44, indicatorBottom: 44 };
+    default:     // 1:1 square
+      return { top: 80, bottom: 80, left: 60, right: 60, cornerInset: 40, indicatorBottom: 40 };
+  }
+}
+
+// Global state passed into build
+let _buildAspectRatio = '1:1';
+let _buildBrandLogoUrl = '';
+
 function buildSlideHtml(s: SlideState): string {
   const font = `'${s.fontFamily}', sans-serif`;
   const color = s.titleColor;
   const shadow = 'text-shadow:0 6px 40px rgba(0,0,0,0.6);';
   const shadowSm = 'text-shadow:0 3px 16px rgba(0,0,0,0.5);';
+  const sz = getSafeZone(_buildAspectRatio);
 
   const glassOpen = s.glassEffect
-    ? `<div style="background:rgba(0,0,0,0.35);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-radius:24px;padding:48px;max-width:88%;">`
+    ? `<div style="background:rgba(0,0,0,0.35);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-radius:24px;padding:48px;">`
     : '';
   const glassClose = s.glassEffect ? '</div>' : '';
 
-  // Position CSS — content area lives between top bar (90px) and bottom bar (90px)
+  // Position CSS using safe zone values
   const posMap: Record<Position, string> = {
-    'top-left': 'top:100px;left:60px;right:60px;text-align:left;',
-    'top-center': 'top:100px;left:60px;right:60px;text-align:center;align-items:center;',
-    'top-right': 'top:100px;left:60px;right:60px;text-align:right;align-items:flex-end;',
-    'middle-left': 'top:100px;bottom:100px;left:60px;right:60px;text-align:left;justify-content:center;',
-    'middle-center': 'top:100px;bottom:100px;left:60px;right:60px;text-align:center;align-items:center;justify-content:center;',
-    'middle-right': 'top:100px;bottom:100px;left:60px;right:60px;text-align:right;align-items:flex-end;justify-content:center;',
-    'bottom-left': 'bottom:100px;left:60px;right:60px;text-align:left;justify-content:flex-end;',
-    'bottom-center': 'bottom:100px;left:60px;right:60px;text-align:center;align-items:center;justify-content:flex-end;',
-    'bottom-right': 'bottom:100px;left:60px;right:60px;text-align:right;align-items:flex-end;justify-content:flex-end;',
+    'top-left':      `top:${sz.top}px;left:${sz.left}px;right:${sz.right}px;text-align:left;`,
+    'top-center':    `top:${sz.top}px;left:${sz.left}px;right:${sz.right}px;text-align:center;align-items:center;`,
+    'top-right':     `top:${sz.top}px;left:${sz.left}px;right:${sz.right}px;text-align:right;align-items:flex-end;`,
+    'middle-left':   `top:${sz.top}px;bottom:${sz.bottom}px;left:${sz.left}px;right:${sz.right}px;text-align:left;justify-content:center;`,
+    'middle-center': `top:${sz.top}px;bottom:${sz.bottom}px;left:${sz.left}px;right:${sz.right}px;text-align:center;align-items:center;justify-content:center;`,
+    'middle-right':  `top:${sz.top}px;bottom:${sz.bottom}px;left:${sz.left}px;right:${sz.right}px;text-align:right;align-items:flex-end;justify-content:center;`,
+    'bottom-left':   `bottom:${sz.bottom}px;left:${sz.left}px;right:${sz.right}px;text-align:left;justify-content:flex-end;`,
+    'bottom-center': `bottom:${sz.bottom}px;left:${sz.left}px;right:${sz.right}px;text-align:center;align-items:center;justify-content:flex-end;`,
+    'bottom-right':  `bottom:${sz.bottom}px;left:${sz.left}px;right:${sz.right}px;text-align:right;align-items:flex-end;justify-content:flex-end;`,
   };
   const pos = posMap[s.position];
 
-  // ── 4 corners ──
+  // ── 4 corners (inside safe zone) ──
+  const ci = sz.cornerInset; // corner inset from edges
   const corners = [
-    s.cornerTopLeft && `<div style="position:absolute;top:36px;left:40px;font-size:20px;color:${color};opacity:0.85;font-family:${font};${shadowSm}">${escHtml(s.cornerTopLeft)}</div>`,
-    s.cornerTopRight && `<div style="position:absolute;top:36px;right:40px;font-size:20px;color:${color};opacity:0.85;font-family:${font};${shadowSm}">${escHtml(s.cornerTopRight)}</div>`,
-    s.cornerBottomLeft && `<div style="position:absolute;bottom:36px;left:40px;font-size:20px;color:${color};opacity:0.85;font-family:${font};${shadowSm}">${escHtml(s.cornerBottomLeft)}</div>`,
-    s.cornerBottomRight && `<div style="position:absolute;bottom:36px;right:40px;font-size:20px;color:${color};opacity:0.85;font-family:${font};${shadowSm}">${escHtml(s.cornerBottomRight)}</div>`,
+    s.cornerTopLeft && `<div style="position:absolute;top:${ci}px;left:${sz.left}px;font-size:20px;color:${color};opacity:0.85;font-family:${font};${shadowSm}">${escHtml(s.cornerTopLeft)}</div>`,
+    s.cornerTopRight && `<div style="position:absolute;top:${ci}px;right:${sz.right}px;font-size:20px;color:${color};opacity:0.85;font-family:${font};${shadowSm}">${escHtml(s.cornerTopRight)}</div>`,
+    s.cornerBottomLeft && `<div style="position:absolute;bottom:${ci}px;left:${sz.left}px;font-size:20px;color:${color};opacity:0.85;font-family:${font};${shadowSm}">${escHtml(s.cornerBottomLeft)}</div>`,
+    s.cornerBottomRight && `<div style="position:absolute;bottom:${ci}px;right:${sz.right}px;font-size:20px;color:${color};opacity:0.85;font-family:${font};${shadowSm}">${escHtml(s.cornerBottomRight)}</div>`,
   ].filter(Boolean).join('\n');
 
-  // ── Slide indicators (dots) ──
+  // ── Brand logo in chosen corner ──
+  let logoHtml = '';
+  if (s.logoPosition && _buildBrandLogoUrl) {
+    const logoSize = 44;
+    const posStyle: Record<string, string> = {
+      'top-left': `top:${ci}px;left:${sz.left}px;`,
+      'top-right': `top:${ci}px;right:${sz.right}px;`,
+      'bottom-left': `bottom:${ci}px;left:${sz.left}px;`,
+      'bottom-right': `bottom:${ci}px;right:${sz.right}px;`,
+    };
+    logoHtml = `<img src="${_buildBrandLogoUrl}" alt="logo" style="position:absolute;${posStyle[s.logoPosition] || ''}width:${logoSize}px;height:${logoSize}px;border-radius:50%;object-fit:cover;" crossorigin="anonymous"/>`;
+  }
+
+  // ── Slide indicators (dots) — inside safe zone ──
   let indicatorsHtml = '';
   if (s.showIndicators && s.totalSlides > 1) {
     const dots = Array.from({ length: s.totalSlides }, (_, i) =>
-      `<span style="display:inline-block;width:${i + 1 === s.slideNumber ? '24px' : '8px'};height:8px;border-radius:4px;background:${i + 1 === s.slideNumber ? color : 'rgba(255,255,255,0.4)'};transition:width 0.2s;"></span>`
+      `<span style="display:inline-block;width:${i + 1 === s.slideNumber ? '24px' : '8px'};height:8px;border-radius:4px;background:${i + 1 === s.slideNumber ? color : 'rgba(255,255,255,0.4)'};"></span>`
     ).join('');
-    indicatorsHtml = `<div style="position:absolute;bottom:36px;left:50%;transform:translateX(-50%);display:flex;gap:6px;align-items:center;">${dots}</div>`;
+    indicatorsHtml = `<div style="position:absolute;bottom:${sz.indicatorBottom}px;left:50%;transform:translateX(-50%);display:flex;gap:6px;align-items:center;">${dots}</div>`;
   }
 
   // ── Content by template ──
@@ -218,6 +253,7 @@ function buildSlideHtml(s: SlideState): string {
 
   return `
     ${corners}
+    ${logoHtml}
     ${indicatorsHtml}
     <div style="position:absolute;${pos};display:flex;flex-direction:column;gap:20px;font-family:${font};">
       ${glassOpen}
@@ -238,6 +274,7 @@ export default function VisualEditorPage() {
   const [aspectRatio, setAspectRatio] = useState<AspectRatio>('1:1');
   const [brands, setBrands] = useState<any[]>([]);
   const [brandId, setBrandId] = useState<string>('');
+  const [brandLogoUrl, setBrandLogoUrl] = useState<string>('');
   const [caption, setCaption] = useState('');
   const [hashtags, setHashtags] = useState('');
   const [scheduledAt, setScheduledAt] = useState('');
@@ -257,12 +294,22 @@ export default function VisualEditorPage() {
   useEffect(() => {
     api.listBrands()
       .then((r: any) => {
-        setBrands(r.items || []);
-        const def = (r.items || []).find((b: any) => b.isDefault);
-        if (def) setBrandId(def.id);
+        const items = r.items || [];
+        setBrands(items);
+        const def = items.find((b: any) => b.isDefault);
+        if (def) {
+          setBrandId(def.id);
+          setBrandLogoUrl(def.logoUrl || '');
+        }
       })
       .catch(() => {});
   }, []);
+
+  // Update logo when brand changes
+  useEffect(() => {
+    const brand = brands.find((b) => b.id === brandId);
+    setBrandLogoUrl(brand?.logoUrl || '');
+  }, [brandId, brands]);
 
   // ── Load post ──
   useEffect(() => {
@@ -358,6 +405,8 @@ export default function VisualEditorPage() {
   }
 
   async function renderSlide(slide: SlideState): Promise<string> {
+    _buildAspectRatio = aspectRatio;
+    _buildBrandLogoUrl = brandLogoUrl;
     const html = buildSlideHtml(slide);
     const result = await api.generateComposed({
       html,
@@ -509,7 +558,12 @@ export default function VisualEditorPage() {
             >
               <div className="absolute inset-0" style={{ background: `rgba(0,0,0,${active.overlayOpacity})` }} />
               {/* Live preview from template */}
-              <div className="absolute inset-0" style={{ transform: 'scale(0.556)', transformOrigin: 'top left', width: '1080px', height: '1080px' }}
+              <div className="absolute inset-0" style={{
+                  transform: 'scale(0.556)', transformOrigin: 'top left',
+                  width: '1080px',
+                  height: aspectRatio === '9:16' ? '1920px' : aspectRatio === '4:5' ? '1350px' : '1080px',
+                }}
+                ref={() => { _buildAspectRatio = aspectRatio; _buildBrandLogoUrl = brandLogoUrl; }}
                 dangerouslySetInnerHTML={{ __html: buildSlideHtml(active) }}
               />
             </div>
@@ -679,8 +733,8 @@ export default function VisualEditorPage() {
             </div>
           </div>
 
-          {/* Corners */}
-          <div className="card p-4 space-y-2">
+          {/* Corners + Logo */}
+          <div className="card p-4 space-y-3">
             <h3 className="text-[11px] font-bold text-text-muted uppercase tracking-wider">Cantos</h3>
             <div className="grid grid-cols-2 gap-2">
               <input value={active.cornerTopLeft} onChange={(e) => updateActive({ cornerTopLeft: e.target.value })} placeholder="Sup. esq (ex: @user)" className="input-field text-[10px]" />
@@ -688,6 +742,39 @@ export default function VisualEditorPage() {
               <input value={active.cornerBottomLeft} onChange={(e) => updateActive({ cornerBottomLeft: e.target.value })} placeholder="Inf. esq (ex: IA para Devs)" className="input-field text-[10px]" />
               <input value={active.cornerBottomRight} onChange={(e) => updateActive({ cornerBottomRight: e.target.value })} placeholder="Inf. dir (ex: arrasta)" className="input-field text-[10px]" />
             </div>
+
+            {/* Logo do brand */}
+            {brandLogoUrl && (
+              <div>
+                <label className="text-[10px] font-semibold text-text-muted uppercase mb-1 block">Logo do brand</label>
+                <div className="flex items-center gap-2 mb-1.5">
+                  <img src={brandLogoUrl} alt="Logo" className="w-8 h-8 rounded-full object-cover border border-border" />
+                  <span className="text-[10px] text-text-secondary">Posicionar logo em qual canto?</span>
+                </div>
+                <div className="grid grid-cols-5 gap-1">
+                  <button onClick={() => updateActive({ logoPosition: '' })}
+                    className={`text-[9px] py-1.5 rounded border ${!active.logoPosition ? 'bg-primary text-white border-primary' : 'bg-white border-border text-text-secondary'}`}>
+                    Nao
+                  </button>
+                  <button onClick={() => updateActive({ logoPosition: 'top-left' })}
+                    className={`text-[9px] py-1.5 rounded border ${active.logoPosition === 'top-left' ? 'bg-primary text-white border-primary' : 'bg-white border-border text-text-secondary'}`}>
+                    S.E
+                  </button>
+                  <button onClick={() => updateActive({ logoPosition: 'top-right' })}
+                    className={`text-[9px] py-1.5 rounded border ${active.logoPosition === 'top-right' ? 'bg-primary text-white border-primary' : 'bg-white border-border text-text-secondary'}`}>
+                    S.D
+                  </button>
+                  <button onClick={() => updateActive({ logoPosition: 'bottom-left' })}
+                    className={`text-[9px] py-1.5 rounded border ${active.logoPosition === 'bottom-left' ? 'bg-primary text-white border-primary' : 'bg-white border-border text-text-secondary'}`}>
+                    I.E
+                  </button>
+                  <button onClick={() => updateActive({ logoPosition: 'bottom-right' })}
+                    className={`text-[9px] py-1.5 rounded border ${active.logoPosition === 'bottom-right' ? 'bg-primary text-white border-primary' : 'bg-white border-border text-text-secondary'}`}>
+                    I.D
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Slide indicators */}
