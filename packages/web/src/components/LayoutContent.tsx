@@ -4,10 +4,12 @@ import { usePathname } from 'next/navigation';
 import { Sidebar } from './Sidebar';
 
 const PUBLIC_PATHS = ['/invite'];
+const FULL_WIDTH_PATHS = ['/posts/visual-editor'];
 
 export function LayoutContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const isPublic = PUBLIC_PATHS.some((p) => pathname.startsWith(p));
+  const isFullWidth = FULL_WIDTH_PATHS.some((p) => pathname.startsWith(p));
 
   if (isPublic) {
     return <>{children}</>;
@@ -16,8 +18,10 @@ export function LayoutContent({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex min-h-screen">
       <Sidebar />
-      <main className="flex-1 ml-60 p-8">
-        <div className="h-1 bg-gradient-to-r from-primary via-accent-pink to-accent-orange rounded-full mb-6 opacity-80" />
+      <main className={`flex-1 ml-60 ${isFullWidth ? 'p-3' : 'p-8'}`}>
+        {!isFullWidth && (
+          <div className="h-1 bg-gradient-to-r from-primary via-accent-pink to-accent-orange rounded-full mb-6 opacity-80" />
+        )}
         {children}
       </main>
     </div>

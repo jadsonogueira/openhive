@@ -703,10 +703,10 @@ export default function VisualEditorPage() {
         </div>
       </aside>
 
-      {/* ── Main Canvas Area (offset for both sidebars) ── */}
+      {/* ── Main Canvas Area (offset for right sidebar) ── */}
       <div className="mr-[320px]">
         {/* Header */}
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between mb-3">
           <div>
             <Link href="/posts" className="text-xs text-text-secondary hover:text-primary inline-flex items-center gap-1 mb-1">
               <ChevronLeft className="w-3.5 h-3.5" /> Voltar
@@ -739,7 +739,7 @@ export default function VisualEditorPage() {
         </div>
 
         {/* Slide thumbnails */}
-        <div className="card p-4 overflow-x-auto mb-4">
+        <div className="card p-3 overflow-x-auto mb-3">
           <div className="flex items-start gap-3 min-w-min">
             {slides.map((slide, idx) => (
               <div key={slide.id} onClick={() => setActiveIdx(idx)}
@@ -772,7 +772,7 @@ export default function VisualEditorPage() {
         </div>
 
         {/* Big preview */}
-        <div className="card p-6">
+        <div className="card p-4">
           <div className={`${aspectClass} w-full max-w-[600px] mx-auto rounded-xl overflow-hidden relative shadow-xl`}
             style={{ background: active.backgroundUrl ? `url('${active.backgroundUrl}') center/cover` : 'linear-gradient(135deg,#1a1a2e,#16213e)' }}
           >
