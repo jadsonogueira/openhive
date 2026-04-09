@@ -76,6 +76,7 @@ export default function VisualEditorPage() {
           setSlides(post.editorState.slides);
           if (post.editorState.brandId) setBrandId(post.editorState.brandId);
           if (post.editorState.globalStyle) setGlobalStyle(post.editorState.globalStyle);
+          if (post.editorState.aspectRatio) setAspectRatio(post.editorState.aspectRatio as AspectRatio);
           setMessage('Post carregado no editor');
           setMessageType('success');
           return;
@@ -204,34 +205,56 @@ export default function VisualEditorPage() {
     setMessage('');
     try {
       const total = slides.length;
-      const finalSlides: SlideState[] = [];
-      for (let i = 0; i < slides.length; i++) {
-        const slide = { ...slides[i], slideNumber: i + 1, totalSlides: total };
-        if (slide.renderedUrl) finalSlides.push(slide);
-        else { const url = await renderSlide(slide); finalSlides.push({ ...slide, renderedUrl: url }); }
-      }
-      setSlides(finalSlides);
+      // Update slide numbers
+      const updatedSlides = slides.map((s, i) => ({ ...s, slideNumber: i + 1, totalSlides: total }));
 
-      const urls = finalSlides.map((s) => s.renderedUrl!).filter(Boolean);
-      if (!urls.length) throw new Error('Nenhum slide');
+      const editorState = { slides: updatedSlides, brandId, aspectRatio, globalStyle };
+      const hashtagList = hashtags.split(',').map((h) => h.trim()).filter(Boolean);
 
-      const editorState = { slides: finalSlides, brandId, aspectRatio, globalStyle };
-      const isCarousel = urls.length >= 2;
+      // Get first rendered image as cover, or use empty string (draft without render)
+      const coverUrl = updatedSlides.find((s) => s.renderedUrl)?.renderedUrl || '';
+      const renderedUrls = updatedSlides.map((s) => s.renderedUrl).filter(Boolean) as string[];
+      const isCarousel = renderedUrls.length >= 2;
 
       if (currentPostId) {
-        await api.updatePost(currentPostId, { caption, hashtags: hashtags.split(',').map((h) => h.trim()).filter(Boolean), aspectRatio, editorState, isCarousel, imageUrl: urls[0] });
-        if (action === 'schedule' && scheduledAt) await api.schedulePost(currentPostId, new Date(scheduledAt).toISOString());
-        setMessage('Post atualizado!');
+        // Update existing post
+        const updatePayload: Record<string, unknown> = {
+          caption,
+          hashtags: hashtagList,
+          aspectRatio,
+          editorState,
+          isCarousel,
+        };
+        if (coverUrl) updatePayload.imageUrl = coverUrl;
+        if (action === 'schedule' && scheduledAt) {
+          updatePayload.scheduledAt = new Date(scheduledAt).toISOString();
+        }
+        await api.updatePost(currentPostId, updatePayload);
+        setMessage(action === 'schedule' ? 'Post agendado!' : 'Post salvo!');
       } else {
-        const payload: Record<string, unknown> = { caption, hashtags: hashtags.split(',').map((h) => h.trim()).filter(Boolean), aspectRatio, editorState };
-        if (isCarousel) { payload.isCarousel = true; payload.images = urls.map((u, i) => ({ imageUrl: u, order: i })); }
-        else payload.imageUrl = urls[0];
+        // Create new post
+        const payload: Record<string, unknown> = {
+          caption,
+          hashtags: hashtagList,
+          aspectRatio,
+          editorState,
+        };
+        if (coverUrl) payload.imageUrl = coverUrl;
+        if (isCarousel) {
+          payload.isCarousel = true;
+          payload.images = renderedUrls.map((u, i) => ({ imageUrl: u, order: i }));
+        }
         const post = (await api.createPost(payload)) as any;
-        if (action === 'schedule' && scheduledAt) await api.schedulePost(post.id, new Date(scheduledAt).toISOString());
+        setCurrentPostId(post.id);
+        // Update URL so refresh preserves the post
+        window.history.replaceState(null, '', `/posts/visual-editor?postId=${post.id}`);
+        if (action === 'schedule' && scheduledAt) {
+          await api.schedulePost(post.id, new Date(scheduledAt).toISOString());
+        }
         setMessage(action === 'schedule' ? 'Post agendado!' : 'Rascunho salvo!');
       }
+      setSlides(updatedSlides);
       setMessageType('success');
-      setTimeout(() => router.push('/posts'), 1500);
     } catch (e: any) { setMessage(e.message); setMessageType('error'); }
     setSavingPost(false);
   }
