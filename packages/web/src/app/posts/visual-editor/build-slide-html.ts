@@ -87,7 +87,7 @@ function buildCornerIconSvg(icon: CornerIcon, color: string, size: number): stri
 
 function buildWordHtml(text: string, highlights: Record<number, WordFormat>, defaultColor: string, font: string, fontSize: number, fontWeight: number, letterSpacing: number, shadow: string): string {
   if (!text) return '';
-  const words = text.split(' ');
+  const words = text.split(/\s+/).filter(Boolean);
   if (Object.keys(highlights).length === 0) {
     return `<span style="font-size:${fontSize}px;font-weight:${fontWeight};color:${defaultColor};letter-spacing:${letterSpacing}em;font-family:${font};${shadow}">${escHtml(text)}</span>`;
   }

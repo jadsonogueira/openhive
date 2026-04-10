@@ -691,6 +691,19 @@ export function EditorSidebar({
           {/* Highlight editing controls */}
           {selectedWordIdx !== null ? (
             <div className="space-y-3 border-t border-border pt-3">
+              {/* Remove highlight button */}
+              {getSelectedHighlight()?.color && (
+                <button
+                  onClick={() => {
+                    const updated = { ...active.wordHighlights };
+                    delete updated[selectedWordIdx];
+                    updateActive({ wordHighlights: updated });
+                  }}
+                  className="w-full py-1.5 rounded border border-red-500/30 text-xs text-status-failed hover:bg-red-500/10 transition-all"
+                >
+                  Remover destaque
+                </button>
+              )}
               {/* Color palette */}
               <div>
                 <span className={labelClass}>COR DO DESTAQUE</span>
