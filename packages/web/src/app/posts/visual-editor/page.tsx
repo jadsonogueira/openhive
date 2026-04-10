@@ -278,21 +278,16 @@ export default function VisualEditorPage() {
       // Prepare all slides first so resolveBackground can see neighbors
       const allSlides = slides.map((s, i) => ({ ...s, slideNumber: i + 1, totalSlides: total }));
 
-      // Render all slides that don't have a renderedUrl yet
+      // Always re-render all slides to ensure final PNGs match preview
       setMessage('Renderizando slides...');
       const finalSlides: SlideState[] = [];
       for (let i = 0; i < allSlides.length; i++) {
-        const slide = allSlides[i];
-        if (slide.renderedUrl) {
-          finalSlides.push(slide);
-        } else {
-          setMessage(`Renderizando slide ${i + 1} de ${total}...`);
-          try {
-            const url = await renderSlide(slide, i, allSlides);
-            finalSlides.push({ ...slide, renderedUrl: url });
-          } catch {
-            finalSlides.push(slide);
-          }
+        setMessage(`Renderizando slide ${i + 1} de ${total}...`);
+        try {
+          const url = await renderSlide(allSlides[i], i, allSlides);
+          finalSlides.push({ ...allSlides[i], renderedUrl: url });
+        } catch {
+          finalSlides.push(allSlides[i]);
         }
       }
       setSlides(finalSlides);
