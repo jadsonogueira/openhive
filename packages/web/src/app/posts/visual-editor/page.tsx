@@ -80,12 +80,26 @@ export default function VisualEditorPage() {
         }
         if (post.aspectRatio) setAspectRatio(post.aspectRatio as AspectRatio);
         if (post.editorState?.slides?.length) {
+          const isMcp = post.source === 'MCP';
+          const coverBgUrl = post.editorState.slides[0]?.backgroundUrl || '';
           // Merge each slide with defaults to fill missing fields from MCP/Antigravity
-          setSlides(post.editorState.slides.map((s: any, i: number) => ({
-            ...emptySlide(i, s.template || (i === 0 ? 'hero' : 'content')),
-            ...s,
-            id: s.id || String(i),
-          })));
+          setSlides(post.editorState.slides.map((s: any, i: number) => {
+            const merged = {
+              ...emptySlide(i, s.template || (i === 0 ? 'hero' : 'content')),
+              ...s,
+              id: s.id || String(i),
+            };
+            // Migration: legacy MCP template slides stored the pre-rendered template
+            // image (with text baked in) as backgroundUrl, causing double text in editor.
+            // Move it to renderedUrl and use cover image as background instead.
+            if (isMcp && i > 0 && merged.backgroundUrl && !merged.renderedUrl && merged.title) {
+              merged.renderedUrl = merged.backgroundUrl;
+              merged.backgroundUrl = coverBgUrl;
+              if (!merged.overlayOpacity) { merged.overlayOpacity = 0.5; merged.overlayStyle = 'gradient'; }
+              merged.glassEffect = true;
+            }
+            return merged;
+          }));
           if (post.editorState.brandId) setBrandId(post.editorState.brandId);
           if (post.editorState.globalStyle) setGlobalStyle(post.editorState.globalStyle);
           if (post.editorState.aspectRatio) setAspectRatio(post.editorState.aspectRatio as AspectRatio);
@@ -458,54 +472,62 @@ export default function VisualEditorPage() {
                   }`}
                     style={{ backgroundColor: slide.slideBgColor || '#000000' }}
                   >
-                    {/* Background image layer */}
-                    {bg.url && (
-                      <div className="absolute inset-0" style={{
-                        backgroundImage: `url('${bg.url}')`,
-                        backgroundRepeat: 'no-repeat',
-                        backgroundPosition: `${bg.posX} ${bg.posY}`,
-                        backgroundSize: bg.size,
-                        opacity: bg.opacity,
-                        transform: bg.flip ? 'scaleX(-1)' : undefined,
-                      }} />
-                    )}
-                    {/* Overlay */}
-                    <div className="absolute inset-0" style={{
-                      background: slide.overlayStyle === 'gradient'
-                        ? `linear-gradient(to bottom, transparent 20%, rgba(0,0,0,${slide.overlayOpacity}))`
-                        : slide.overlayStyle === 'vignette'
-                        ? `radial-gradient(ellipse at center, transparent 30%, rgba(0,0,0,${slide.overlayOpacity}) 100%)`
-                        : `rgba(0,0,0,${slide.overlayOpacity})`
-                    }} />
+                    {slide.renderedUrl ? (
+                      /* Show pre-rendered image (from MCP template or previous render) */
+                      /* eslint-disable-next-line @next/next/no-img-element */
+                      <img src={slide.renderedUrl} alt="" className="absolute inset-0 w-full h-full object-cover" />
+                    ) : (
+                      <>
+                        {/* Background image layer */}
+                        {bg.url && (
+                          <div className="absolute inset-0" style={{
+                            backgroundImage: `url('${bg.url}')`,
+                            backgroundRepeat: 'no-repeat',
+                            backgroundPosition: `${bg.posX} ${bg.posY}`,
+                            backgroundSize: bg.size,
+                            opacity: bg.opacity,
+                            transform: bg.flip ? 'scaleX(-1)' : undefined,
+                          }} />
+                        )}
+                        {/* Overlay */}
+                        <div className="absolute inset-0" style={{
+                          background: slide.overlayStyle === 'gradient'
+                            ? `linear-gradient(to bottom, transparent 20%, rgba(0,0,0,${slide.overlayOpacity}))`
+                            : slide.overlayStyle === 'vignette'
+                            ? `radial-gradient(ellipse at center, transparent 30%, rgba(0,0,0,${slide.overlayOpacity}) 100%)`
+                            : `rgba(0,0,0,${slide.overlayOpacity})`
+                        }} />
 
-                    {/* Live preview: 1080px source scaled to fit via ResizeObserver */}
-                    <div className="absolute inset-0 overflow-hidden"
-                      ref={(container) => {
-                        if (!container) return;
-                        const inner = container.firstElementChild as HTMLElement;
-                        if (!inner) return;
-                        const update = () => {
-                          const s = container.offsetWidth / 1080;
-                          inner.style.transform = `scale(${s})`;
-                        };
-                        update();
-                        const ro = new ResizeObserver(update);
-                        ro.observe(container);
-                        (container as any)._ro?.disconnect();
-                        (container as any)._ro = ro;
-                      }}
-                    >
-                      <div style={{
-                          width: '1080px',
-                          height: previewH,
-                          transformOrigin: 'top left',
-                        }}
-                        dangerouslySetInnerHTML={{ __html: buildSlideHtml(
-                          { ...slide, slideNumber: idx + 1, totalSlides: slides.length },
-                          { aspectRatio, brandLogoUrl, brandName, globalStyle }
-                        ) }}
-                      />
-                    </div>
+                        {/* Live preview: 1080px source scaled to fit via ResizeObserver */}
+                        <div className="absolute inset-0 overflow-hidden"
+                          ref={(container) => {
+                            if (!container) return;
+                            const inner = container.firstElementChild as HTMLElement;
+                            if (!inner) return;
+                            const update = () => {
+                              const s = container.offsetWidth / 1080;
+                              inner.style.transform = `scale(${s})`;
+                            };
+                            update();
+                            const ro = new ResizeObserver(update);
+                            ro.observe(container);
+                            (container as any)._ro?.disconnect();
+                            (container as any)._ro = ro;
+                          }}
+                        >
+                          <div style={{
+                              width: '1080px',
+                              height: previewH,
+                              transformOrigin: 'top left',
+                            }}
+                            dangerouslySetInnerHTML={{ __html: buildSlideHtml(
+                              { ...slide, slideNumber: idx + 1, totalSlides: slides.length },
+                              { aspectRatio, brandLogoUrl, brandName, globalStyle }
+                            ) }}
+                          />
+                        </div>
+                      </>
+                    )}
 
                     {/* Slide number badge */}
                     <div className={`absolute top-3 left-3 px-2 py-1 rounded-md text-[11px] font-bold ${
