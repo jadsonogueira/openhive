@@ -2,7 +2,7 @@ import { Router, Response } from 'express';
 import { z } from 'zod';
 import { authMiddleware, AuthRequest } from '../middleware/auth.middleware';
 import { validate } from '../middleware/validate';
-import { generateImageController, generateCaptionController } from '../controllers/generate.controller';
+import { generateImageController, generateCaptionController, refineSlideController } from '../controllers/generate.controller';
 import { renderTemplateToImage, renderHtmlToImage, renderComposedToImage } from '../services/template-renderer.service';
 import { TEMPLATES } from '../services/templates';
 import { generateImage } from '../services/nanobana.service';
@@ -29,6 +29,15 @@ router.use(authMiddleware);
 
 router.post('/image', validate(imageSchema), generateImageController);
 router.post('/caption', validate(captionSchema), generateCaptionController);
+
+// Refine slide content with AI (Gemini)
+const refineSchema = z.object({
+  title: z.string().min(1),
+  subtitle: z.string().optional(),
+  label: z.string().optional(),
+  instruction: z.string().min(1),
+});
+router.post('/refine', validate(refineSchema), refineSlideController);
 
 // Template-based image generation (no AI needed)
 const templateSchema = z.object({

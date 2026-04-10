@@ -68,6 +68,7 @@ interface EditorSidebarProps {
   handleUploadBg: (file: File) => void;
   handleGenerateBg: () => void;
   handleGenerateContent: () => void;
+  handleRefineSlide: (instruction: string) => void;
   handleRenderAll: () => void;
   handleSavePost: (action: 'draft' | 'schedule') => void;
   renderingAll: boolean;
@@ -107,6 +108,7 @@ export function EditorSidebar({
   handleUploadBg,
   handleGenerateBg,
   handleGenerateContent,
+  handleRefineSlide,
   handleRenderAll,
   handleSavePost,
   renderingAll,
@@ -310,13 +312,14 @@ export function EditorSidebar({
             />
             <button
               onClick={() => {
-                updateActive({ refinePrompt });
+                handleRefineSlide(refinePrompt);
                 setRefinePrompt('');
               }}
-              className="mt-1.5 w-full py-1.5 px-3 rounded border border-border text-xs font-semibold text-text-secondary hover:bg-bg-hover transition-all flex items-center justify-center gap-2"
+              disabled={genLoading === 'refine' || !refinePrompt.trim()}
+              className="mt-1.5 w-full py-1.5 px-3 rounded border border-border text-xs font-semibold text-text-secondary hover:bg-bg-hover transition-all flex items-center justify-center gap-2 disabled:opacity-50"
             >
               <Wand2 className="w-3.5 h-3.5" />
-              Refinar este slide
+              {genLoading === 'refine' ? 'Refinando...' : 'Refinar este slide'}
             </button>
           </div>
         </CollapsibleSection>

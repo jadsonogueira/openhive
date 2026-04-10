@@ -184,6 +184,18 @@ export default function VisualEditorPage() {
     setGenLoading(null);
   }
 
+  async function handleRefineSlide(instruction: string) {
+    if (!instruction.trim()) { setMessage('Descreva o que quer refinar'); setMessageType('error'); return; }
+    setGenLoading('refine');
+    try {
+      const r = await api.refineSlide({ title: active.title, subtitle: active.subtitle, label: active.label, instruction });
+      updateActive({ title: r.title, subtitle: r.subtitle, label: r.label });
+      setMessage('Slide refinado com IA');
+      setMessageType('success');
+    } catch (e: any) { setMessage(e.message); setMessageType('error'); }
+    setGenLoading(null);
+  }
+
   function resolveBackground(slide: SlideState, idx: number, allSlides: SlideState[]): { url: string; posX: string; posY: string; size: string; opacity: number; flip: boolean } {
     const prevSlide = idx > 0 ? allSlides[idx - 1] : null;
     const isInfiniteLeft = slide.infiniteCarousel && slide.backgroundUrl;
@@ -374,6 +386,7 @@ export default function VisualEditorPage() {
         handleUploadBg={handleUploadBg}
         handleGenerateBg={handleGenerateBg}
         handleGenerateContent={handleGenerateContent}
+        handleRefineSlide={handleRefineSlide}
         handleRenderAll={handleRenderAll}
         handleSavePost={handleSavePost}
         renderingAll={renderingAll}

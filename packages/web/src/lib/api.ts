@@ -103,6 +103,12 @@ export const api = {
       body: JSON.stringify({ topic, tone }),
     }),
 
+  refineSlide: (body: { title: string; subtitle?: string; label?: string; instruction: string }) =>
+    request<{ title: string; subtitle: string; label: string }>('/api/generate/refine', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+
   instagramStatus: () => request<{ connected: boolean }>('/api/instagram/status'),
 
   // Tasks
