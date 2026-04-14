@@ -82,7 +82,12 @@ function buildPatternSvg(pattern: BgPattern, color: string, size: number, opacit
 function buildCornerIconSvg(icon: CornerIcon, color: string, size: number): string {
   const cfg = CORNER_ICONS.find((i) => i.id === icon);
   if (!cfg || !cfg.svg) return '';
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${cfg.svg}</svg>`;
+  // Solid icons (bookmark, heart, sparkle) need fill; line icons (arrow, share, chat) need stroke
+  const solidIcons = ['bookmark', 'heart', 'sparkle'];
+  const isSolid = solidIcons.includes(icon);
+  const fillAttr = isSolid ? `fill="${color}"` : 'fill="none"';
+  const strokeAttr = isSolid ? `stroke="none"` : `stroke="${color}" stroke-width="2"`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 24 24" ${fillAttr} ${strokeAttr} stroke-linecap="round" stroke-linejoin="round">${cfg.svg}</svg>`;
 }
 
 function buildWordHtml(text: string, highlights: Record<number, WordFormat>, defaultColor: string, font: string, fontSize: number, fontWeight: number, letterSpacing: number, shadow: string): string {
