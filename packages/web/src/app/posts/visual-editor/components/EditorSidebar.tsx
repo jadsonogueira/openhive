@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef } from 'react';
+import { api } from '../../../../lib/api';
 import {
   SlideState,
   GlobalStyle,
@@ -174,6 +175,17 @@ export function EditorSidebar({
     }
   };
 
+  const uploadLogoFile = async (file: File) => {
+    try {
+      const result = await api.uploadFile(file);
+      updateAllSlides({ customLogoUrl: result.fileUrl });
+    } catch {
+      // Fallback to blob URL if upload fails
+      const url = URL.createObjectURL(file);
+      updateAllSlides({ customLogoUrl: url });
+    }
+  };
+
   const handlePasteLogo = async () => {
     try {
       const items = await navigator.clipboard.read();
@@ -181,8 +193,8 @@ export function EditorSidebar({
         const imageType = item.types.find((t) => t.startsWith('image/'));
         if (imageType) {
           const blob = await item.getType(imageType);
-          const url = URL.createObjectURL(blob);
-          updateAllSlides({ customLogoUrl: url });
+          const file = new File([blob], 'logo.png', { type: imageType });
+          await uploadLogoFile(file);
           return;
         }
       }
@@ -193,10 +205,7 @@ export function EditorSidebar({
 
   const handleLogoFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      const url = URL.createObjectURL(file);
-      updateAllSlides({ customLogoUrl: url });
-    }
+    if (file) uploadLogoFile(file);
   };
 
   const setGS = (patch: Partial<GlobalStyle>) => {
