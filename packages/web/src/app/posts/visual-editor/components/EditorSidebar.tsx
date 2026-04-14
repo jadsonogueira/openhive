@@ -71,6 +71,8 @@ interface EditorSidebarProps {
   handleGenerateContent: () => void;
   handleRefineSlide: (instruction: string) => void;
   handleRenderAll: () => void;
+  handleDownloadSlide: () => void;
+  handleDownloadAll: () => void;
   handleSavePost: (action: 'draft' | 'schedule') => void;
   renderingAll: boolean;
   savingPost: boolean;
@@ -111,6 +113,8 @@ export function EditorSidebar({
   handleGenerateContent,
   handleRefineSlide,
   handleRenderAll,
+  handleDownloadSlide,
+  handleDownloadAll,
   handleSavePost,
   renderingAll,
   savingPost,
@@ -1600,7 +1604,7 @@ export function EditorSidebar({
       <div className="sticky bottom-0 bg-bg-card border-t border-border p-3 space-y-2">
         {/* Download current slide */}
         <button
-          onClick={handleRenderAll}
+          onClick={handleDownloadSlide}
           disabled={renderingAll}
           className="w-full py-2.5 px-4 rounded-lg bg-primary text-white font-semibold text-sm hover:bg-primary/90 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
         >
@@ -1619,7 +1623,7 @@ export function EditorSidebar({
             {savingPost ? 'Salvando...' : 'Salvar'}
           </button>
           <button
-            onClick={handleRenderAll}
+            onClick={handleDownloadAll}
             disabled={renderingAll}
             className="flex-1 py-2 px-3 rounded-lg border border-primary/30 bg-primary/10 text-primary text-sm font-semibold hover:bg-primary/20 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
           >

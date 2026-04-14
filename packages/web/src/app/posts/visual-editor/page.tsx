@@ -281,6 +281,59 @@ export default function VisualEditorPage() {
     setRenderingAll(false);
   }
 
+  function triggerDownload(url: string, filename: string) {
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.target = '_blank';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  }
+
+  async function handleDownloadSlide() {
+    setRenderingAll(true);
+    setMessage('');
+    try {
+      const total = slides.length;
+      const allSlides = slides.map((s, i) => ({ ...s, slideNumber: i + 1, totalSlides: total }));
+      const url = slides[activeIdx].renderedUrl || await renderSlide(allSlides[activeIdx], activeIdx, allSlides);
+      if (!slides[activeIdx].renderedUrl) {
+        setSlides((prev) => prev.map((s, i) => i === activeIdx ? { ...s, renderedUrl: url } : s));
+      }
+      triggerDownload(url, `slide-${activeIdx + 1}.png`);
+      setMessage('Slide baixado!');
+      setMessageType('success');
+    } catch (e: any) { setMessage(e.message); setMessageType('error'); }
+    setRenderingAll(false);
+  }
+
+  async function handleDownloadAll() {
+    setRenderingAll(true);
+    setMessage('');
+    try {
+      const total = slides.length;
+      const allSlides = slides.map((s, i) => ({ ...s, slideNumber: i + 1, totalSlides: total }));
+      const updated: SlideState[] = [];
+      for (let i = 0; i < allSlides.length; i++) {
+        setMessage(`Renderizando slide ${i + 1} de ${total}...`);
+        const url = allSlides[i].renderedUrl || await renderSlide(allSlides[i], i, allSlides);
+        updated.push({ ...allSlides[i], renderedUrl: url });
+      }
+      setSlides(updated);
+      // Download each with small delay so browser handles multiple downloads
+      for (let i = 0; i < updated.length; i++) {
+        if (updated[i].renderedUrl) {
+          triggerDownload(updated[i].renderedUrl!, `slide-${i + 1}.png`);
+          await new Promise((r) => setTimeout(r, 300));
+        }
+      }
+      setMessage(`${updated.length} slides baixados!`);
+      setMessageType('success');
+    } catch (e: any) { setMessage(e.message); setMessageType('error'); }
+    setRenderingAll(false);
+  }
+
   async function handleSavePost(action: 'draft' | 'schedule') {
     setSavingPost(true);
     setMessage('');
@@ -388,6 +441,8 @@ export default function VisualEditorPage() {
         handleGenerateContent={handleGenerateContent}
         handleRefineSlide={handleRefineSlide}
         handleRenderAll={handleRenderAll}
+        handleDownloadSlide={handleDownloadSlide}
+        handleDownloadAll={handleDownloadAll}
         handleSavePost={handleSavePost}
         renderingAll={renderingAll}
         savingPost={savingPost}
