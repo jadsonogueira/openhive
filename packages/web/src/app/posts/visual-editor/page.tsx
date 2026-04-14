@@ -432,6 +432,7 @@ export default function VisualEditorPage() {
       {/* ── Right Sidebar ── */}
       <EditorSidebar
         slides={slides}
+        setSlides={setSlides}
         activeIdx={activeIdx}
         active={active}
         updateActive={updateActive}

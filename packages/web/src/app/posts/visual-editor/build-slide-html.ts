@@ -161,9 +161,11 @@ export function buildSlideHtml(
     : '';
 
   const corners: string[] = [];
-  // Check if bottom-right icon is active
-  const hasBottomRightIcon = gs.bottomRightIcon && gs.bottomRightIcon !== 'none' && gs.showCorners;
-  const bottomRightIconSvg = hasBottomRightIcon ? buildCornerIconSvg(gs.bottomRightIcon!, color, cfs + 4) : '';
+  // Check if bottom-right icon is active — use lastSlideIcon override on the last slide
+  const isLastSlide = s.slideNumber === s.totalSlides;
+  const effectiveIcon = (isLastSlide && gs.lastSlideIcon && gs.lastSlideIcon !== 'none') ? gs.lastSlideIcon : gs.bottomRightIcon;
+  const hasBottomRightIcon = effectiveIcon && effectiveIcon !== 'none' && gs.showCorners;
+  const bottomRightIconSvg = hasBottomRightIcon ? buildCornerIconSvg(effectiveIcon!, color, cfs + 4) : '';
   const hasBottomRightText = !!(s.cornerBottomRight && s.cornerBottomRightEnabled);
 
   if (gs.showCorners) {

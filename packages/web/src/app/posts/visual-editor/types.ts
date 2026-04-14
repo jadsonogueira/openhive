@@ -123,6 +123,7 @@ export interface GlobalStyle {
   cornerGlass: boolean;
   cornerBorder: boolean;
   bottomRightIcon: CornerIcon;
+  lastSlideIcon?: CornerIcon;
 }
 
 // ── Saved Template ──

@@ -55,6 +55,7 @@ import {
 
 interface EditorSidebarProps {
   slides: SlideState[];
+  setSlides: React.Dispatch<React.SetStateAction<SlideState[]>>;
   activeIdx: number;
   active: SlideState;
   updateActive: (patch: Partial<SlideState>) => void;
@@ -97,6 +98,7 @@ const btnInactive = 'bg-bg-card border-border text-text-secondary';
 
 export function EditorSidebar({
   slides,
+  setSlides,
   activeIdx,
   active,
   updateActive,
@@ -1297,6 +1299,70 @@ export function EditorSidebar({
               ))}
             </div>
           </div>
+
+          {/* Last slide override */}
+          {slides.length >= 2 && (
+            <div className="mt-3 pt-3 border-t border-border">
+              <span className={labelClass}>ULTIMO SLIDE — SOBRESCREVER CANTOS</span>
+              <p className="text-[10px] text-text-muted mt-0.5 mb-2">Mude o texto e icone do canto inferior direito apenas no ultimo slide (ex: &quot;salve&quot; com bookmark)</p>
+              {(() => {
+                const lastSlide = slides[slides.length - 1];
+                const lastIdx = slides.length - 1;
+                const isLastActive = activeIdx === lastIdx;
+                return (
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] text-text-muted w-10">Inf.Dir</span>
+                      <input
+                        className="input-field text-xs flex-1 min-w-0"
+                        value={lastSlide.cornerBottomRight}
+                        onChange={(e) => {
+                          const patch = { cornerBottomRight: e.target.value };
+                          if (isLastActive) updateActive(patch);
+                          else setSlides((prev) => prev.map((s, i) => i === lastIdx ? { ...s, ...patch, renderedUrl: undefined } : s));
+                        }}
+                        placeholder="Ex: salve, compartilhe..."
+                      />
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] text-text-muted w-10">Inf.Esq</span>
+                      <input
+                        className="input-field text-xs flex-1 min-w-0"
+                        value={lastSlide.cornerBottomLeft}
+                        onChange={(e) => {
+                          const patch = { cornerBottomLeft: e.target.value };
+                          if (isLastActive) updateActive(patch);
+                          else setSlides((prev) => prev.map((s, i) => i === lastIdx ? { ...s, ...patch, renderedUrl: undefined } : s));
+                        }}
+                        placeholder="Ex: @handle"
+                      />
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-text-muted">Icone do ultimo slide</span>
+                      <div className="flex gap-1 mt-1 flex-wrap">
+                        {CORNER_ICONS.map((ci) => (
+                          <button
+                            key={ci.id}
+                            onClick={() => {
+                              const patch = { lastSlideIcon: ci.id };
+                              setGS(patch as any);
+                            }}
+                            className={`text-xs py-1 px-2 rounded border transition-all ${
+                              (globalStyle as any).lastSlideIcon === ci.id ? btnActive : btnInactive
+                            }`}
+                          >
+                            {ci.svg ? (
+                              <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" dangerouslySetInnerHTML={{ __html: ci.svg }} />
+                            ) : '—'}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
+          )}
         </CollapsibleSection>
 
         {/* ── 8. Badge ou Logo de Perfil ── */}
