@@ -281,14 +281,14 @@ export default function SettingsPage() {
                     <button
                       onClick={() => {
                         const mcpUrl = settings['MCP_URL']?.value || '';
-                        const apiUrl = mcpUrl.replace(/\/mcp\/?$/, '').replace(/:\d+\/mcp\/?$/, '').replace(/mcp\./, 'api.');
+                        const apiUrl = mcpUrl.replace(/\/mcp\/?$/, '');
                         const json = JSON.stringify({
                           mcpServers: {
                             openhive: {
                               command: 'npx',
                               args: ['-y', 'openhive-mcp-server@latest'],
                               env: {
-                                OPENHIVE_API_URL: apiUrl || 'https://api.seu-servidor.com',
+                                OPENHIVE_API_URL: apiUrl || 'https://seu-servidor.com',
                                 OPENHIVE_API_TOKEN: settings['MCP_TOKEN']?.value || 'seu-token-aqui',
                               },
                             },
@@ -307,14 +307,14 @@ export default function SettingsPage() {
                   <pre className="text-[11px] text-text-secondary font-mono whitespace-pre overflow-x-auto">
 {(() => {
   const mcpUrl = settings['MCP_URL']?.value || '';
-  const apiUrl = mcpUrl.replace(/\/mcp\/?$/, '').replace(/:\d+\/mcp\/?$/, '').replace(/mcp\./, 'api.');
+  const apiUrl = mcpUrl.replace(/\/mcp\/?$/, '');
   return JSON.stringify({
     mcpServers: {
       openhive: {
         command: 'npx',
         args: ['-y', 'openhive-mcp-server@latest'],
         env: {
-          OPENHIVE_API_URL: apiUrl || 'https://api.seu-servidor.com',
+          OPENHIVE_API_URL: apiUrl || 'https://seu-servidor.com',
           OPENHIVE_API_TOKEN: settings['MCP_TOKEN']?.value || 'seu-token-aqui',
         },
       },

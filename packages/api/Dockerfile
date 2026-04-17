@@ -22,10 +22,10 @@ COPY --from=builder /app/node_modules ./node_modules
 
 # Internal Docker network config (matches docker-compose.prod.yml)
 ENV NODE_ENV=production
-ENV PORT=3001
-ENV DATABASE_URL=postgresql://openhive:changeme@postgres:5432/openhive
-ENV REDIS_URL=redis://:changeme@redis:6379
-ENV MINIO_ENDPOINT=minio
+ENV PORT=3066
+ENV DATABASE_URL=postgresql://openhive:changeme@openhive-postgres:5432/openhive
+ENV REDIS_URL=redis://:changeme@openhive-redis:6379
+ENV MINIO_ENDPOINT=openhive-minio
 ENV MINIO_PORT=9000
 ENV MINIO_USE_SSL=false
 ENV MINIO_ACCESS_KEY=minioadmin
@@ -49,6 +49,6 @@ ENV JWT_SECRET=${JWT_SECRET:-changeme}
 ENV FRONTEND_URL=${FRONTEND_URL:-http://localhost:3000}
 ENV MINIO_PUBLIC_URL=${MINIO_PUBLIC_URL:-http://localhost:9000}
 
-EXPOSE 3001
-HEALTHCHECK --interval=30s --timeout=5s CMD wget -qO- http://localhost:3001/api/health || exit 1
+EXPOSE 3066
+HEALTHCHECK --interval=30s --timeout=5s CMD wget -qO- http://localhost:3066/api/health || exit 1
 CMD ["sh", "-c", "npx prisma migrate deploy && node dist/index.js"]
