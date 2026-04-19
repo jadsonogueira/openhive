@@ -86,16 +86,38 @@ export const api = {
 
   deletePost: (id: string) => request(`/api/posts/${id}`, { method: 'DELETE' }),
 
-  publishPost: (id: string) => request(`/api/posts/${id}/publish`, { method: 'POST' }),
+  publishPost: (id: string, publishMode?: string) =>
+    request(`/api/posts/${id}/publish`, { method: 'POST', body: JSON.stringify({ publishMode }) }),
 
   schedulePost: (id: string, scheduledAt: string) =>
     request(`/api/posts/${id}/schedule`, { method: 'POST', body: JSON.stringify({ scheduledAt }) }),
 
-  generateImage: (prompt: string, aspectRatio?: string) =>
+  generateImage: (prompt: string, aspectRatio?: string, referenceImageUrl?: string) =>
     request<{ imageUrl: string }>('/api/generate/image', {
       method: 'POST',
-      body: JSON.stringify({ prompt, aspectRatio }),
+      body: JSON.stringify({ prompt, aspectRatio, referenceImageUrl }),
     }),
+
+  generateImageEdit: async (prompt: string, referenceImage: File, aspectRatio?: string) => {
+    const formData = new FormData();
+    formData.append('prompt', prompt);
+    formData.append('referenceImage', referenceImage);
+    if (aspectRatio) formData.append('aspectRatio', aspectRatio);
+    const t = getToken();
+    const res = await fetch(`${BASE_URL}/api/generate/image-edit`, {
+      method: 'POST',
+      headers: t ? { Authorization: `Bearer ${t}` } : {},
+      body: formData,
+    });
+    let data: any;
+    try {
+      data = await res.json();
+    } catch {
+      throw new Error(res.ok ? 'Resposta invalida do servidor' : `Erro ${res.status}: servidor indisponivel`);
+    }
+    if (!res.ok) throw new Error(data?.error || 'Failed to edit image');
+    return data.data as { imageUrl: string };
+  },
 
   generateCaption: (topic: string, tone?: string) =>
     request<{ caption: string; hashtags: string[] }>('/api/generate/caption', {
@@ -140,6 +162,34 @@ export const api = {
     request(`/api/projects/${projectId}/modules/${moduleId}`, { method: 'PUT', body: JSON.stringify(body) }),
   deleteModule: (projectId: string, moduleId: string) =>
     request(`/api/projects/${projectId}/modules/${moduleId}`, { method: 'DELETE' }),
+
+  uploadImage: async (file: File) => {
+    const formData = new FormData();
+    formData.append('image', file);
+    const t = getToken();
+    const res = await fetch(`${BASE_URL}/api/upload`, {
+      method: 'POST',
+      headers: t ? { Authorization: `Bearer ${t}` } : {},
+      body: formData,
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data?.error || 'Upload failed');
+    return data.data as { imageUrl: string };
+  },
+
+  uploadMultipleImages: async (files: File[]) => {
+    const formData = new FormData();
+    files.forEach((f) => formData.append('images', f));
+    const t = getToken();
+    const res = await fetch(`${BASE_URL}/api/upload/multiple`, {
+      method: 'POST',
+      headers: t ? { Authorization: `Bearer ${t}` } : {},
+      body: formData,
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data?.error || 'Upload failed');
+    return data.data as { images: { imageUrl: string; order: number }[] };
+  },
 
   uploadFile: async (file: File) => {
     const formData = new FormData();

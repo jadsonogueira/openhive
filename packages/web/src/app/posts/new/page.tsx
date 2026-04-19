@@ -24,6 +24,7 @@ export default function NewPost() {
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [hashtags, setHashtags] = useState('');
   const [scheduledAt, setScheduledAt] = useState('');
+  const [showSchedule, setShowSchedule] = useState(false);
   const [aspectRatio, setAspectRatio] = useState('1:1');
   const [imageCount, setImageCount] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -36,7 +37,12 @@ export default function NewPost() {
   const [postFile, setPostFile] = useState({ url: '', name: '' });
   const [fileUploading, setFileUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploadLoading, setUploadLoading] = useState(false);
+  const imageInputRef = useRef<HTMLInputElement>(null);
+  const refImageInputRef = useRef<HTMLInputElement>(null);
+  const [referenceImage, setReferenceImage] = useState<{ file: File; preview: string } | null>(null);
   const [genMode, setGenMode] = useState<'ai' | 'template' | 'misto' | 'composed'>('ai');
+  const [publishMode, setPublishMode] = useState<'FEED' | 'STORIES'>('FEED');
   const [selectedTemplate, setSelectedTemplate] = useState('bold-gradient');
   const [templateSubtitle, setTemplateSubtitle] = useState('');
   const [mistoSlideText, setMistoSlideText] = useState('');
@@ -169,6 +175,34 @@ export default function NewPost() {
     setFileUploading(false);
   }
 
+  async function handleImageUpload(files: FileList) {
+    const remaining = 10 - images.length;
+    const toUpload = Array.from(files).slice(0, remaining);
+    if (toUpload.length === 0) {
+      setMessage('Maximo de 10 imagens por carrossel');
+      setMessageType('error');
+      return;
+    }
+    setUploadLoading(true);
+    setMessage('');
+    try {
+      if (toUpload.length === 1) {
+        const result = await api.uploadImage(toUpload[0]);
+        setImages((prev) => [...prev, { url: result.imageUrl }]);
+        setActiveImageIndex(images.length);
+      } else {
+        const result = await api.uploadMultipleImages(toUpload);
+        const newImages = result.images.map((img) => ({ url: img.imageUrl }));
+        setImages((prev) => [...prev, ...newImages]);
+        setActiveImageIndex(images.length + newImages.length - 1);
+      }
+    } catch (err: any) {
+      setMessage(err.message || 'Erro ao enviar imagem');
+      setMessageType('error');
+    }
+    setUploadLoading(false);
+  }
+
   async function handleGenerateImage() {
     if (!prompt) return;
     const remaining = 10 - images.length;
@@ -180,29 +214,39 @@ export default function NewPost() {
     }
     setGenLoading(true);
     setMessage('');
-    setGenProgress(count > 1 ? `0/${count} imagens geradas...` : '');
+    setGenProgress(referenceImage ? 'Editando imagem com IA...' : (count > 1 ? `0/${count} imagens geradas...` : ''));
 
     let generated = 0;
     const newImages: CarouselImage[] = [];
 
-    const promises = Array.from({ length: count }, async (_, i) => {
+    if (referenceImage) {
       try {
-        const variation = count > 1 ? `${prompt} - variacao ${i + 1} de ${count}` : prompt;
-        const result = await api.generateImage(variation, aspectRatio);
-        newImages.push({ url: result.imageUrl, prompt: variation });
-        generated++;
-        if (count > 1) setGenProgress(`${generated}/${count} imagens geradas...`);
-      } catch {
-        // skip failed
+        const result = await api.generateImageEdit(prompt, referenceImage.file, aspectRatio);
+        newImages.push({ url: result.imageUrl, prompt });
+      } catch (err: any) {
+        setMessage(err.message || 'Erro ao editar imagem');
+        setMessageType('error');
       }
-    });
+    } else {
+      const promises = Array.from({ length: count }, async (_, i) => {
+        try {
+          const variation = count > 1 ? `${prompt} - variacao ${i + 1} de ${count}` : prompt;
+          const result = await api.generateImage(variation, aspectRatio);
+          newImages.push({ url: result.imageUrl, prompt: variation });
+          generated++;
+          if (count > 1) setGenProgress(`${generated}/${count} imagens geradas...`);
+        } catch {
+          // skip failed
+        }
+      });
 
-    await Promise.all(promises);
+      await Promise.all(promises);
+    }
 
     if (newImages.length > 0) {
       setImages((prev) => [...prev, ...newImages]);
       setActiveImageIndex(images.length + newImages.length - 1);
-    } else {
+    } else if (!referenceImage) {
       setMessage('Nenhuma imagem gerada. Tente novamente.');
       setMessageType('error');
     }
@@ -264,8 +308,8 @@ export default function NewPost() {
         setMessage('Post agendado com sucesso!');
         setMessageType('success');
       } else if (status === 'publish') {
-        await api.publishPost(post.id);
-        setMessage('Post publicado com sucesso!');
+        await api.publishPost(post.id, publishMode);
+        setMessage(`Post publicado como ${publishMode === 'STORIES' ? 'Stories' : 'Feed'}!`);
         setMessageType('success');
       } else {
         setMessage('Rascunho salvo!');
@@ -328,16 +372,58 @@ export default function NewPost() {
               </div>
             </div>
             <div className="space-y-3">
+              {/* Reference image for AI editing */}
+              {genMode === 'ai' && (
+                <div>
+                  <label className="block text-xs font-semibold text-text-secondary mb-1.5 uppercase tracking-wider">Imagem de referencia (opcional)</label>
+                  <input
+                    ref={refImageInputRef}
+                    type="file"
+                    className="hidden"
+                    accept="image/jpeg,image/png,image/webp"
+                    onChange={(e) => {
+                      const f = e.target.files?.[0];
+                      if (f) {
+                        const preview = URL.createObjectURL(f);
+                        setReferenceImage({ file: f, preview });
+                      }
+                      e.target.value = '';
+                    }}
+                  />
+                  {referenceImage ? (
+                    <div className="flex items-center gap-3 p-2.5 rounded-lg bg-bg-main border border-border">
+                      <img src={referenceImage.preview} alt="Referencia" className="w-14 h-14 rounded-lg object-cover" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-medium text-text-primary truncate">{referenceImage.file.name}</p>
+                        <p className="text-[10px] text-primary">A IA vai editar esta imagem com base no prompt</p>
+                      </div>
+                      <button onClick={() => { setReferenceImage(null); }} className="p-1.5 rounded-lg hover:bg-bg-card transition-colors flex-shrink-0">
+                        <X className="w-3.5 h-3.5 text-text-muted" />
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => refImageInputRef.current?.click()}
+                      className="flex items-center gap-2 w-full px-3 py-2.5 rounded-lg border border-dashed border-border text-xs font-medium text-text-secondary hover:border-primary hover:text-primary transition-colors"
+                    >
+                      <ImageIcon className="w-4 h-4" strokeWidth={1.5} />
+                      Anexar foto para a IA editar
+                    </button>
+                  )}
+                  <p className="text-[10px] text-text-muted mt-1">Envie uma foto e descreva no prompt o que a IA deve fazer: melhorar, adicionar texto, mudar estilo, etc.</p>
+                </div>
+              )}
+
               {/* Shared: Prompt/Title field (AI and Template modes) */}
               {genMode !== 'misto' && genMode !== 'composed' && (
                 <div>
                   <label className="block text-xs font-semibold text-text-secondary mb-1.5 uppercase tracking-wider">
-                    {genMode === 'ai' ? 'Prompt' : 'Texto Principal'}
+                    {genMode === 'ai' ? (referenceImage ? 'O que fazer com a imagem' : 'Prompt') : 'Texto Principal'}
                   </label>
                   <textarea
                     value={prompt}
                     onChange={(e) => setPrompt(e.target.value)}
-                    placeholder={genMode === 'ai' ? "Descreva o tema do post... Ex: 'Post sobre produtividade com dicas de organizacao'" : "Texto que aparece no post... Ex: '5 dicas de produtividade'"}
+                    placeholder={genMode === 'ai' ? (referenceImage ? "Ex: 'Melhore essa foto, coloque a frase VIVA A VIDA em letras grandes no centro'" : "Descreva o tema do post... Ex: 'Post sobre produtividade com dicas de organizacao'") : "Texto que aparece no post... Ex: '5 dicas de produtividade'"}
                     rows={genMode === 'template' ? 2 : 3}
                     className="input-field resize-none"
                   />
@@ -416,13 +502,33 @@ export default function NewPost() {
                   </div>
                   <div className="flex gap-2">
                     <button onClick={handleGenerateImage} disabled={genLoading || !prompt} className="btn-cta flex-1 justify-center text-xs py-2.5">
-                      {genLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : imageCount >= 2 ? <Layers className="w-4 h-4" strokeWidth={1.5} /> : <Plus className="w-4 h-4" strokeWidth={1.5} />}
-                      {genLoading ? (genProgress || 'Gerando...') : imageCount >= 2 ? `Gerar Carrossel (${imageCount})` : images.length > 0 ? 'Adicionar Imagem' : 'Gerar Imagem'}
+                      {genLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : referenceImage ? <Zap className="w-4 h-4" strokeWidth={1.5} /> : imageCount >= 2 ? <Layers className="w-4 h-4" strokeWidth={1.5} /> : <Plus className="w-4 h-4" strokeWidth={1.5} />}
+                      {genLoading ? (genProgress || 'Gerando...') : referenceImage ? 'Editar com IA' : imageCount >= 2 ? `Gerar Carrossel (${imageCount})` : images.length > 0 ? 'Adicionar Imagem' : 'Gerar Imagem'}
                     </button>
                     <button onClick={handleGenerateCaption} disabled={genLoading || !prompt} className="btn-ghost flex-1 justify-center text-xs py-2.5">
                       <Edit3 className="w-4 h-4" strokeWidth={1.5} />
                       Gerar Legenda
                     </button>
+                  </div>
+                  {/* Upload from gallery */}
+                  <div>
+                    <input
+                      ref={imageInputRef}
+                      type="file"
+                      className="hidden"
+                      accept="image/jpeg,image/png,image/webp"
+                      multiple
+                      onChange={(e) => { if (e.target.files?.length) handleImageUpload(e.target.files); e.target.value = ''; }}
+                    />
+                    <button
+                      onClick={() => imageInputRef.current?.click()}
+                      disabled={uploadLoading || images.length >= 10}
+                      className="btn-ghost w-full justify-center text-xs py-2.5 border-dashed"
+                    >
+                      {uploadLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" strokeWidth={1.5} />}
+                      {uploadLoading ? 'Enviando...' : 'Enviar imagem da galeria'}
+                    </button>
+                    <p className="text-[10px] text-text-muted mt-1 text-center">JPG, PNG ou WebP. Selecione varias para carrossel.</p>
                   </div>
                 </div>
               )}
@@ -688,8 +794,24 @@ export default function NewPost() {
 
           {/* Schedule */}
           <div className="card p-5">
-            <label className="block text-xs font-semibold text-text-secondary mb-1.5 uppercase tracking-wider">Agendar para</label>
-            <input type="datetime-local" value={scheduledAt} onChange={(e) => setScheduledAt(e.target.value)} className="input-field" />
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-semibold text-text-secondary uppercase tracking-wider">Agendar para</label>
+              <button
+                type="button"
+                onClick={() => { setShowSchedule(!showSchedule); if (showSchedule) setScheduledAt(''); }}
+                className={`text-xs font-medium px-2.5 py-1 rounded-badge transition-colors ${showSchedule ? 'bg-primary/10 text-primary' : 'bg-bg-main text-text-muted hover:text-text-primary'}`}
+              >
+                {showSchedule ? 'Cancelar agendamento' : 'Definir data'}
+              </button>
+            </div>
+            {showSchedule && (
+              <input
+                type="datetime-local"
+                value={scheduledAt}
+                onChange={(e) => setScheduledAt(e.target.value)}
+                className="input-field mt-2"
+              />
+            )}
           </div>
 
           {/* File Upload */}
@@ -730,7 +852,7 @@ export default function NewPost() {
             <div className="relative">
               <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" strokeWidth={1.5} />
               <input
-                type="url"
+                type="text"
                 value={driveLink}
                 onChange={(e) => setDriveLink(e.target.value)}
                 placeholder="https://drive.google.com/..."
@@ -741,18 +863,28 @@ export default function NewPost() {
 
           {/* Actions */}
           <div className="flex gap-3">
-            <button onClick={() => handleSave('draft')} disabled={loading} className="btn-ghost flex-1 justify-center">
+            <button type="button" onClick={() => handleSave('draft')} disabled={loading} className="btn-ghost flex-1 justify-center">
               <Save className="w-4 h-4" strokeWidth={1.5} />
               Rascunho
             </button>
-            <button onClick={() => handleSave('schedule')} disabled={loading || !scheduledAt} className="btn-ghost flex-1 justify-center text-status-scheduled border-status-scheduled/30 hover:bg-blue-500/10 hover:text-status-scheduled">
+            <button type="button" onClick={() => handleSave('schedule')} disabled={loading || !scheduledAt} className="btn-ghost flex-1 justify-center text-status-scheduled border-status-scheduled/30 hover:bg-blue-500/10 hover:text-status-scheduled">
               <Clock className="w-4 h-4" strokeWidth={1.5} />
               Agendar
             </button>
-            <button onClick={() => handleSave('publish')} disabled={loading} className="btn-cta flex-1 justify-center">
-              <Send className="w-4 h-4" strokeWidth={1.5} />
-              Publicar
-            </button>
+            <div className="flex-1 flex gap-0.5">
+              <button type="button" onClick={() => handleSave('publish')} disabled={loading} className="btn-cta flex-1 justify-center rounded-r-none">
+                <Send className="w-4 h-4" strokeWidth={1.5} />
+                {publishMode === 'STORIES' ? 'Stories' : 'Feed'}
+              </button>
+              <button
+                type="button"
+                onClick={() => setPublishMode(publishMode === 'FEED' ? 'STORIES' : 'FEED')}
+                className="btn-cta px-2 rounded-l-none border-l border-white/20"
+                title="Alternar Feed / Stories"
+              >
+                <ChevronLeft className="w-3 h-3 rotate-[-90deg]" />
+              </button>
+            </div>
           </div>
 
           {/* Message */}

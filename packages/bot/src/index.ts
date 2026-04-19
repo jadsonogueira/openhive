@@ -49,6 +49,71 @@ bot.command('template', templateCommand);
 // Callback queries (inline buttons)
 bot.on('callback_query:data', handleCallbackQuery);
 
+// Photo from gallery → upload and create post
+bot.on('message:photo', async (ctx) => {
+  const caption = ctx.message.caption || '';
+
+  await ctx.reply('📸 *Foto recebida!* Fazendo upload e criando post...', { parse_mode: 'Markdown' });
+
+  try {
+    const photos = ctx.message.photo;
+    const largest = photos[photos.length - 1];
+    const file = await ctx.api.getFile(largest.file_id);
+    const fileUrl = `https://api.telegram.org/file/bot${token}/${file.file_path}`;
+
+    const response = await fetch(fileUrl);
+    if (!response.ok) throw new Error('Falha ao baixar foto do Telegram');
+    const buffer = Buffer.from(await response.arrayBuffer());
+
+    const ext = file.file_path?.split('.').pop() || 'jpg';
+    const mimetype = ext === 'png' ? 'image/png' : 'image/jpeg';
+    const { imageUrl } = await api.uploadImage(buffer, `photo.${ext}`, mimetype);
+
+    let postCaption = caption;
+    let hashtags: string[] = [];
+
+    if (!caption) {
+      await ctx.reply('✍️ Gerando legenda com IA...');
+      try {
+        const result = await api.generateCaption('post com imagem enviada pelo usuario');
+        postCaption = result.caption;
+        hashtags = result.hashtags;
+      } catch {
+        postCaption = '';
+      }
+    }
+
+    const post = (await api.createPost({
+      caption: postCaption,
+      imageUrl,
+      imageSource: 'UPLOAD',
+      hashtags,
+      source: 'TELEGRAM',
+    })) as any;
+
+    const keyboard = new InlineKeyboard()
+      .text('✅ Aprovar', `approve_${post.id}`)
+      .text('🔄 Nova Imagem', `regen_${post.id}`)
+      .row()
+      .text('📤 Publicar Agora', `publish_${post.id}`)
+      .text('📅 Agendar', `schedule_${post.id}`)
+      .row()
+      .text('❌ Cancelar', `cancel_${post.id}`);
+
+    const displayCaption = postCaption
+      ? `${postCaption}\n\n${hashtags.map((h: string) => `#${h}`).join(' ')}`
+      : '📷 Post criado com sua foto';
+
+    await sendPhoto(ctx, imageUrl, {
+      caption: displayCaption.slice(0, 1024),
+      reply_markup: keyboard,
+    });
+  } catch (err: any) {
+    console.error('[Bot] Photo upload failed:', err.message);
+    await ctx.reply(`❌ Erro ao criar post com foto: ${err.message}`);
+  }
+});
+
 // Free text → interpret as post creation request
 bot.on('message:text', async (ctx) => {
   const text = ctx.message.text;

@@ -65,10 +65,11 @@ async function withRetry<T>(fn: () => Promise<T>, label: string, maxRetries = 3)
  */
 async function getPublicImageUrl(imageUrl: string): Promise<string> {
   const isLocal = /^https?:\/\/(localhost|127\.0\.0\.1|0\.0\.0\.0)(:\d+)?\//.test(imageUrl);
-  if (!isLocal) return imageUrl;
+  const isSelfHosted = imageUrl.includes('/storage/') || imageUrl.includes(env.MINIO_BUCKET);
+  if (!isLocal && !isSelfHosted) return imageUrl;
 
-  console.log('[Instagram] Image is localhost, uploading to public host...');
-  console.log('[Instagram] Local URL:', imageUrl);
+  console.log('[Instagram] Image is self-hosted, uploading to public host for Instagram access...');
+  console.log('[Instagram] Original URL:', imageUrl);
 
   // Download from local MinIO
   const imgRes = await fetch(imageUrl);
@@ -77,9 +78,11 @@ async function getPublicImageUrl(imageUrl: string): Promise<string> {
 
   // Upload to catbox.moe (free, no API key needed, 200MB limit)
   const formData = new FormData();
-  const blob = new Blob([buffer], { type: 'image/jpeg' });
+  const contentType = imgRes.headers.get('content-type') || 'image/jpeg';
+  const ext = contentType.includes('png') ? 'png' : contentType.includes('webp') ? 'webp' : 'jpg';
+  const blob = new Blob([buffer], { type: contentType });
   formData.append('reqtype', 'fileupload');
-  formData.append('fileToUpload', blob, 'image.jpg');
+  formData.append('fileToUpload', blob, `image.${ext}`);
 
   const uploadRes = await fetch('https://catbox.moe/user/api.php', {
     method: 'POST',
@@ -194,27 +197,32 @@ async function createChildContainer(publicUrl: string, token: string, igUserId: 
   return data.id;
 }
 
-async function publishSingleImage(imageUrl: string, caption: string, token: string, igUserId: string) {
+async function publishSingleImage(imageUrl: string, caption: string, token: string, igUserId: string, mode: 'FEED' | 'STORIES' = 'FEED') {
   const publicImageUrl = await getPublicImageUrl(imageUrl);
   const base = getGraphBase(token);
   const userPath = resolveUserIdForToken(token, igUserId);
 
-  console.log('[Instagram] Creating single image container...');
+  console.log(`[Instagram] Creating single image container (${mode})...`);
   console.log('[Instagram] Endpoint:', `${base}/${userPath}`);
   console.log('[Instagram] Stored User ID:', igUserId, '(using:', userPath, ')');
   console.log('[Instagram] Image URL:', publicImageUrl);
 
-  // Verify that the image URL is publicly accessible BEFORE asking Instagram to download it
   await verifyPublicUrl(publicImageUrl, 'Image');
 
   const createData = await withRetry(async () => {
+    const params: Record<string, string> = {
+      image_url: publicImageUrl,
+      access_token: token,
+    };
+    if (mode === 'STORIES') {
+      params.media_type = 'STORIES';
+    } else {
+      if (caption) params.caption = caption;
+    }
+
     const createRes = await fetch(`${base}/${userPath}/media`, {
       method: 'POST',
-      body: new URLSearchParams({
-        image_url: publicImageUrl,
-        caption,
-        access_token: token,
-      }),
+      body: new URLSearchParams(params),
     });
     const data = (await createRes.json()) as any;
     console.log('[Instagram] Create container response:', JSON.stringify(data));
@@ -222,7 +230,7 @@ async function publishSingleImage(imageUrl: string, caption: string, token: stri
       throw new Error(`Failed to create media container: ${JSON.stringify(data)}`);
     }
     return data;
-  }, 'Create single container');
+  }, `Create single ${mode} container`);
 
   await pollContainerStatus(createData.id, token);
   return await publishContainer(createData.id, token, igUserId);
@@ -424,11 +432,17 @@ export async function publishToInstagram(postId: string, accountId?: string) {
     return await publishVideoMedia(post.videoUrl, caption, token, igUserId, mode);
   }
 
-  // Carousel or single image?
+  // Stories mode for images
+  if (post.publishMode === 'STORIES') {
+    if (!post.imageUrl) throw new Error('Post has no image');
+    return await publishSingleImage(post.imageUrl, caption, token, igUserId, 'STORIES');
+  }
+
+  // Carousel or single image (Feed)
   if (post.isCarousel && post.images && post.images.length >= 2) {
     return await publishCarousel(post.images, caption, token, igUserId);
   } else {
     if (!post.imageUrl) throw new Error('Post has no image');
-    return await publishSingleImage(post.imageUrl, caption, token, igUserId);
+    return await publishSingleImage(post.imageUrl, caption, token, igUserId, 'FEED');
   }
 }

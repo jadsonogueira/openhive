@@ -93,4 +93,26 @@ export const api = {
   // Template image generation
   generateTemplate: (body: Record<string, unknown>) =>
     request<{ imageUrl: string }>('/api/generate/template', { method: 'POST', body: JSON.stringify(body) }),
+
+  // Upload image buffer to MinIO via API
+  uploadImage: async (buffer: Buffer, filename: string, mimetype: string): Promise<{ imageUrl: string }> => {
+    const url = `${API_URL}/api/upload`;
+    const boundary = `----BotUpload${Date.now()}`;
+    const header = `--${boundary}\r\nContent-Disposition: form-data; name="image"; filename="${filename}"\r\nContent-Type: ${mimetype}\r\n\r\n`;
+    const footer = `\r\n--${boundary}--\r\n`;
+    const body = Buffer.concat([Buffer.from(header), buffer, Buffer.from(footer)]);
+
+    console.log(`[Bot API] POST ${url} (upload ${(buffer.length / 1024).toFixed(0)}KB)`);
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': `multipart/form-data; boundary=${boundary}`,
+        Authorization: `Bearer ${API_TOKEN}`,
+      },
+      body,
+    });
+    const data = await res.json() as any;
+    if (!res.ok) throw new Error(data.error || 'Upload failed');
+    return data.data;
+  },
 };

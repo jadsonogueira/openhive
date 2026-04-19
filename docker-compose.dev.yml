@@ -22,7 +22,7 @@ services:
       dockerfile: packages/api/Dockerfile
     container_name: instapost-api-dev
     ports:
-      - '3001:3001'
+      - '3001:3066'
     volumes:
       - ./packages/api/src:/app/packages/api/src
       - ./packages/shared/src:/app/packages/shared/src
@@ -42,13 +42,14 @@ services:
       dockerfile: packages/web/Dockerfile
     container_name: instapost-web-dev
     ports:
-      - '3000:3000'
+      - '3030:3065'
     volumes:
       - ./packages/web/src:/app/packages/web/src
     depends_on:
       - api
     environment:
       - NEXT_PUBLIC_API_URL=http://localhost:3001
+      - API_INTERNAL_URL=http://api:3066
     restart: unless-stopped
 
   telegram-bot:

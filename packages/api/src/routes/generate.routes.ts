@@ -1,20 +1,24 @@
 import { Router, Response } from 'express';
 import { z } from 'zod';
+import multer from 'multer';
 import { authMiddleware, AuthRequest } from '../middleware/auth.middleware';
 import { validate } from '../middleware/validate';
 import { generateImageController, generateCaptionController, refineSlideController } from '../controllers/generate.controller';
 import { renderTemplateToImage, renderHtmlToImage, renderComposedToImage } from '../services/template-renderer.service';
 import { TEMPLATES } from '../services/templates';
 import { generateImage } from '../services/nanobana.service';
+import { uploadImage } from '../services/storage.service';
 import { prisma } from '../config/database';
 import { resolveOwnerId } from '../helpers/resolveOwnerId';
 
 const router = Router();
+const refUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 25 * 1024 * 1024 } });
 
 const imageSchema = z.object({
   prompt: z.string().min(1),
   style: z.string().optional(),
   aspectRatio: z.enum(['1:1', '9:16', '4:5']).optional(),
+  referenceImageUrl: z.string().optional(),
 });
 
 const captionSchema = z.object({
@@ -28,6 +32,36 @@ const captionSchema = z.object({
 router.use(authMiddleware);
 
 router.post('/image', validate(imageSchema), generateImageController);
+
+router.post('/image-edit', (req: AuthRequest, res: Response, next) => {
+  refUpload.single('referenceImage')(req as any, res as any, (err: any) => {
+    if (err) {
+      const status = err.code === 'LIMIT_FILE_SIZE' ? 413 : 400;
+      const message = err.code === 'LIMIT_FILE_SIZE' ? 'Imagem muito grande (max 25MB)' : err.message;
+      return res.status(status).json({ success: false, error: message });
+    }
+    next();
+  });
+}, async (req: AuthRequest, res: Response) => {
+  try {
+    const { prompt, style, aspectRatio } = req.body;
+    if (!prompt) { res.status(400).json({ success: false, error: 'prompt is required' }); return; }
+
+    let referenceImageUrl: string | undefined;
+    if (req.file) {
+      referenceImageUrl = await uploadImage(req.file.buffer, req.file.mimetype);
+    } else if (req.body.referenceImageUrl) {
+      referenceImageUrl = req.body.referenceImageUrl;
+    }
+
+    const result = await generateImage({ prompt, style, aspectRatio, referenceImageUrl });
+    res.json({ success: true, data: result });
+  } catch (err: any) {
+    console.error('Image edit error:', err.message || err);
+    res.status(500).json({ success: false, error: err.message || 'Failed to edit image' });
+  }
+});
+
 router.post('/caption', validate(captionSchema), generateCaptionController);
 
 // Refine slide content with AI (Gemini)

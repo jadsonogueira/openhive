@@ -37,6 +37,7 @@ export default function PostsList() {
   const [editCaption, setEditCaption] = useState('');
   const [editHashtags, setEditHashtags] = useState('');
   const [editScheduledAt, setEditScheduledAt] = useState('');
+  const [publishDropdown, setPublishDropdown] = useState<string | null>(null);
 
   async function loadPosts() {
     try {
@@ -67,13 +68,14 @@ export default function PostsList() {
     } catch { alert('Erro ao deletar'); }
   }
 
-  async function handlePublish(id: string) {
-    if (!await confirm({ message: 'Publicar agora no Instagram?', danger: false })) return;
+  async function handlePublish(id: string, publishMode: string) {
+    setPublishDropdown(null);
+    const label = publishMode === 'STORIES' ? 'Stories' : publishMode === 'REELS' ? 'Reels' : 'Feed';
+    if (!await confirm({ message: `Publicar como ${label} no Instagram?`, danger: false })) return;
     setActionLoading(id);
     try {
-      await api.publishPost(id);
-      // Update local state immediately (API now returns instantly, publishes in background)
-      setPosts((prev) => prev.map((p) => p.id === id ? { ...p, status: 'PUBLISHING' } : p));
+      await api.publishPost(id, publishMode);
+      setPosts((prev) => prev.map((p) => p.id === id ? { ...p, status: 'PUBLISHING', publishMode } : p));
     } catch (err: any) { alert(err.message || 'Erro ao publicar'); }
     setActionLoading(null);
   }
@@ -222,9 +224,9 @@ export default function PostsList() {
                     )}
                     <div>
                       <p className="text-sm text-text-primary max-w-xs truncate">{post.caption || 'Sem legenda'}</p>
-                      {post.mediaType === 'VIDEO' && (
+                      {post.publishMode && (
                         <span className="text-[10px] text-primary font-bold uppercase">
-                          {post.publishMode === 'STORIES' ? 'Stories' : post.publishMode === 'FEED' ? 'Feed Video' : 'Reels'}
+                          {post.publishMode === 'STORIES' ? 'Stories' : post.publishMode === 'FEED' ? (post.mediaType === 'VIDEO' ? 'Feed Video' : 'Feed') : 'Reels'}
                         </span>
                       )}
                       {(post.isCarousel || (post.editorState?.slides?.length ?? 0) >= 2) && (
@@ -259,15 +261,51 @@ export default function PostsList() {
                   <div className="flex gap-1.5 justify-end">
                     {(post.status === 'DRAFT' || post.status === 'FAILED') && (
                       <>
-                        <button
-                          onClick={() => handlePublish(post.id)}
-                          disabled={actionLoading === post.id}
-                          className="px-3 py-1.5 rounded-badge text-xs font-semibold bg-emerald-500/10 text-status-published hover:bg-emerald-100 transition-colors disabled:opacity-50"
-                          title="Publicar"
-                        >
-                          {actionLoading === post.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5 inline mr-1" strokeWidth={1.5} />}
-                          {actionLoading !== post.id && 'Publicar'}
-                        </button>
+                        <div className="relative">
+                          <button
+                            onClick={() => setPublishDropdown(publishDropdown === post.id ? null : post.id)}
+                            disabled={actionLoading === post.id}
+                            className="px-3 py-1.5 rounded-badge text-xs font-semibold bg-emerald-500/10 text-status-published hover:bg-emerald-100 transition-colors disabled:opacity-50"
+                            title="Publicar"
+                          >
+                            {actionLoading === post.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5 inline mr-1" strokeWidth={1.5} />}
+                            {actionLoading !== post.id && 'Publicar'}
+                          </button>
+                          {publishDropdown === post.id && (
+                            <>
+                              <div className="fixed inset-0 z-40" onClick={() => setPublishDropdown(null)} />
+                              <div className="absolute right-0 top-full mt-1 z-50 bg-bg-card border border-border rounded-lg shadow-lg py-1 min-w-[140px]">
+                                {post.mediaType === 'VIDEO' ? (
+                                  <>
+                                    <button onClick={() => handlePublish(post.id, 'REELS')} className="w-full text-left px-3 py-2 text-xs hover:bg-bg-card-hover transition-colors flex items-center gap-2">
+                                      <Film className="w-3.5 h-3.5 text-primary" strokeWidth={1.5} />
+                                      Reels
+                                    </button>
+                                    <button onClick={() => handlePublish(post.id, 'STORIES')} className="w-full text-left px-3 py-2 text-xs hover:bg-bg-card-hover transition-colors flex items-center gap-2">
+                                      <VideoIcon className="w-3.5 h-3.5 text-fuchsia-500" strokeWidth={1.5} />
+                                      Stories
+                                    </button>
+                                    <button onClick={() => handlePublish(post.id, 'FEED')} className="w-full text-left px-3 py-2 text-xs hover:bg-bg-card-hover transition-colors flex items-center gap-2">
+                                      <ImageIcon className="w-3.5 h-3.5 text-blue-500" strokeWidth={1.5} />
+                                      Feed Video
+                                    </button>
+                                  </>
+                                ) : (
+                                  <>
+                                    <button onClick={() => handlePublish(post.id, 'FEED')} className="w-full text-left px-3 py-2 text-xs hover:bg-bg-card-hover transition-colors flex items-center gap-2">
+                                      <ImageIcon className="w-3.5 h-3.5 text-primary" strokeWidth={1.5} />
+                                      Feed
+                                    </button>
+                                    <button onClick={() => handlePublish(post.id, 'STORIES')} className="w-full text-left px-3 py-2 text-xs hover:bg-bg-card-hover transition-colors flex items-center gap-2">
+                                      <Layers className="w-3.5 h-3.5 text-fuchsia-500" strokeWidth={1.5} />
+                                      Stories
+                                    </button>
+                                  </>
+                                )}
+                              </div>
+                            </>
+                          )}
+                        </div>
                         <button
                           onClick={() => { setScheduleModal(post.id); setScheduleDate(''); }}
                           className="px-3 py-1.5 rounded-badge text-xs font-semibold bg-blue-500/10 text-status-scheduled hover:bg-blue-100 transition-colors"

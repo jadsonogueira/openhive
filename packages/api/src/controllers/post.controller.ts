@@ -213,7 +213,14 @@ export async function publishPost(req: AuthRequest, res: Response) {
   try {
     const id = paramId(req);
     const accountId = (req.body?.accountId || req.query?.accountId || undefined) as string | undefined;
-    await prisma.post.update({ where: { id }, data: { status: 'PUBLISHING' } });
+    const publishMode = req.body?.publishMode as string | undefined;
+
+    const updateData: Record<string, unknown> = { status: 'PUBLISHING' };
+    if (publishMode && ['FEED', 'REELS', 'STORIES'].includes(publishMode)) {
+      updateData.publishMode = publishMode;
+    }
+
+    await prisma.post.update({ where: { id }, data: updateData });
     await publishQueue.add('publish', { postId: id, accountId }, { jobId: `publish-${id}-${Date.now()}` });
     res.json({ success: true, data: { status: 'PUBLISHING', message: 'Publicacao iniciada em background' } });
   } catch (err: any) {
