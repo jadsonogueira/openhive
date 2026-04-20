@@ -32,6 +32,7 @@ model User {
   instagramTokens InstagramToken[]
   invitations    Invitation[]
   brands         Brand[]
+  sermons        Sermon[]
   allowedPages   String[]        @default([])
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
@@ -384,4 +385,33 @@ model VideoClip {
 
   @@index([userId])
   @@index([status])
+}
+
+// === Sermon (Pregação) models ===
+
+model Sermon {
+  id        String        @id @default(uuid())
+  title     String?
+  lines     Json          @default("[]")
+  status    String        @default("active")
+  userId    String
+  user      User          @relation(fields: [userId], references: [id])
+  drafts    SermonDraft[]
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  @@index([userId])
+}
+
+model SermonDraft {
+  id        String   @id @default(uuid())
+  sermonId  String
+  sermon    Sermon   @relation(fields: [sermonId], references: [id], onDelete: Cascade)
+  title     String
+  format    String
+  tone      String
+  content   String
+  createdAt DateTime @default(now())
+
+  @@index([sermonId])
 }

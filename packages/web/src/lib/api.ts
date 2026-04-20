@@ -390,4 +390,17 @@ export const api = {
     if (!res.ok) throw new Error(data?.error || 'Upload failed');
     return data?.data;
   },
+
+  // Sermons (Pregação)
+  createSermon: (title?: string) =>
+    request<any>('/api/sermons', { method: 'POST', body: JSON.stringify({ title }) }),
+  listSermons: () => request<any>('/api/sermons'),
+  getSermon: (id: string) => request<any>(`/api/sermons/${id}`),
+  updateSermon: (id: string, body: Record<string, unknown>) =>
+    request(`/api/sermons/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
+  deleteSermon: (id: string) => request(`/api/sermons/${id}`, { method: 'DELETE' }),
+  generateSermonContent: (id: string, tone?: string, format?: string) =>
+    request<any>(`/api/sermons/${id}/generate`, { method: 'POST', body: JSON.stringify({ tone, format }) }),
+  deleteSermonDraft: (sermonId: string, draftId: string) =>
+    request(`/api/sermons/${sermonId}/drafts/${draftId}`, { method: 'DELETE' }),
 };

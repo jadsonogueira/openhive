@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, PlusSquare, FileText, Calendar, CheckSquare, FolderKanban, Settings, LogOut, Hexagon, Users, GitBranch, Video, Palette, Wand2, Moon, Sun } from 'lucide-react';
+import { Home, PlusSquare, FileText, Calendar, CheckSquare, FolderKanban, Settings, LogOut, Hexagon, Users, GitBranch, Video, Palette, Wand2, Moon, Sun, Mic, BookOpen } from 'lucide-react';
 import { useAuth } from './AuthProvider';
 import { useTheme } from './ThemeProvider';
 
@@ -12,6 +12,8 @@ const links = [
   { href: '/posts/visual-editor', label: 'Editor Visual', icon: Wand2, page: 'posts' },
   { href: '/posts/videos', label: 'Reels / Videos', icon: Video, page: 'posts' },
   { href: '/posts', label: 'Posts', icon: FileText, page: 'posts' },
+  { href: '/pregacao', label: 'Pregacao', icon: Mic, page: 'pregacao' },
+  { href: '/meus-conteudos', label: 'Meus Conteudos', icon: BookOpen, page: 'pregacao' },
   { href: '/calendar', label: 'Calendario', icon: Calendar, page: 'calendar' },
   { href: '/tasks', label: 'Tarefas', icon: CheckSquare, page: 'tasks' },
   { href: '/projects', label: 'Projetos', icon: FolderKanban, page: 'projects' },
