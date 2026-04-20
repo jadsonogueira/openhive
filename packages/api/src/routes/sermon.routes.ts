@@ -6,6 +6,10 @@ import { resolveOwnerId } from '../helpers/resolveOwnerId';
 const router = Router();
 router.use(authMiddleware);
 
+function paramId(req: AuthRequest): string {
+  return paramId(req) as string;
+}
+
 // Create a new sermon session
 router.post('/', async (req: AuthRequest, res: Response) => {
   try {
@@ -40,7 +44,7 @@ router.get('/:id', async (req: AuthRequest, res: Response) => {
   try {
     const userId = await resolveOwnerId(req.userId!);
     const sermon = await prisma.sermon.findFirst({
-      where: { id: req.params.id, userId },
+      where: { id: paramId(req), userId },
       include: { drafts: { orderBy: { createdAt: 'desc' } } },
     });
     if (!sermon) { res.status(404).json({ success: false, error: 'Not found' }); return; }
@@ -61,7 +65,7 @@ router.put('/:id', async (req: AuthRequest, res: Response) => {
     if (title !== undefined) data.title = title;
 
     const sermon = await prisma.sermon.updateMany({
-      where: { id: req.params.id, userId },
+      where: { id: paramId(req), userId },
       data,
     });
     if (sermon.count === 0) { res.status(404).json({ success: false, error: 'Not found' }); return; }
@@ -75,7 +79,7 @@ router.put('/:id', async (req: AuthRequest, res: Response) => {
 router.delete('/:id', async (req: AuthRequest, res: Response) => {
   try {
     const userId = await resolveOwnerId(req.userId!);
-    const result = await prisma.sermon.deleteMany({ where: { id: req.params.id, userId } });
+    const result = await prisma.sermon.deleteMany({ where: { id: paramId(req), userId } });
     if (result.count === 0) { res.status(404).json({ success: false, error: 'Not found' }); return; }
     res.json({ success: true });
   } catch (err: any) {
@@ -88,7 +92,7 @@ router.post('/:id/generate', async (req: AuthRequest, res: Response) => {
   try {
     const userId = await resolveOwnerId(req.userId!);
     const sermon = await prisma.sermon.findFirst({
-      where: { id: req.params.id, userId },
+      where: { id: paramId(req), userId },
     });
     if (!sermon) { res.status(404).json({ success: false, error: 'Not found' }); return; }
 
@@ -184,9 +188,9 @@ Responda em JSON com o formato:
 router.delete('/:id/drafts/:draftId', async (req: AuthRequest, res: Response) => {
   try {
     const userId = await resolveOwnerId(req.userId!);
-    const sermon = await prisma.sermon.findFirst({ where: { id: req.params.id, userId } });
+    const sermon = await prisma.sermon.findFirst({ where: { id: paramId(req), userId } });
     if (!sermon) { res.status(404).json({ success: false, error: 'Not found' }); return; }
-    await prisma.sermonDraft.delete({ where: { id: req.params.draftId } });
+    await prisma.sermonDraft.delete({ where: { id: req.params.draftId as string } });
     res.json({ success: true });
   } catch (err: any) {
     res.status(500).json({ success: false, error: err.message });
