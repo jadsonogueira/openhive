@@ -65,8 +65,7 @@ async function withRetry<T>(fn: () => Promise<T>, label: string, maxRetries = 3)
  */
 async function getPublicImageUrl(imageUrl: string): Promise<string> {
   const isLocal = /^https?:\/\/(localhost|127\.0\.0\.1|0\.0\.0\.0)(:\d+)?\//.test(imageUrl);
-  const isSelfHosted = imageUrl.includes('/storage/') || imageUrl.includes(env.MINIO_BUCKET);
-  if (!isLocal && !isSelfHosted) return imageUrl;
+  if (!isLocal) return imageUrl;
 
   console.log('[Instagram] Image is self-hosted, uploading to public host for Instagram access...');
   console.log('[Instagram] Original URL:', imageUrl);
