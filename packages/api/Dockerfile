@@ -14,7 +14,10 @@ RUN cd packages/shared && npx tsc && cd /app/packages/api && npx tsc
 
 FROM node:20-alpine
 WORKDIR /app
-RUN apk add --no-cache wget
+RUN apk add --no-cache wget python3 py3-pip ffmpeg && \
+    python3 -m venv /opt/venv && \
+    /opt/venv/bin/pip install --no-cache-dir yt-dlp
+ENV PATH="/opt/venv/bin:$PATH"
 COPY --from=builder /app/packages/api/dist ./dist
 COPY --from=builder /app/packages/api/package.json ./
 COPY --from=builder /app/packages/api/prisma ./prisma

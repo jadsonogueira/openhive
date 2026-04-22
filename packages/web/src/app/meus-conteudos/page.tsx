@@ -55,7 +55,9 @@ export default function MeusConteudosPage() {
     try {
       await api.deleteSermon(id);
       setSermons((prev) => prev.filter((s) => s.id !== id));
-    } catch { /* */ }
+    } catch (err: any) {
+      alert(err.message || 'Erro ao deletar pregacao');
+    }
   }
 
   async function handleDeleteDraft(sermonId: string, draftId: string) {
@@ -68,7 +70,9 @@ export default function MeusConteudosPage() {
           drafts: prev[sermonId].drafts?.filter((d) => d.id !== draftId),
         },
       }));
-    } catch { /* */ }
+    } catch (err: any) {
+      alert(err.message || 'Erro ao deletar rascunho');
+    }
   }
 
   async function handleGenerate(sermonId: string) {

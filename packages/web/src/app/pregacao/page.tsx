@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { api } from '../../lib/api';
-import { Mic, MicOff, Plus, Loader2, Sparkles, Clock } from 'lucide-react';
+import { Mic, MicOff, Plus, Loader2, Sparkles, Clock, Youtube } from 'lucide-react';
 
 type LiveLine = { id: number; text: string; timestamp: string };
 type Draft = { id: string; title: string; format: string; tone: string; content: string };
@@ -31,7 +31,15 @@ export default function PregacaoPage() {
   const [drafts, setDrafts] = useState<Draft[]>([]);
   const [genMessage, setGenMessage] = useState('');
 
+  const [youtubeUrl, setYoutubeUrl] = useState('');
+  const [loadingYoutube, setLoadingYoutube] = useState(false);
+  const [youtubeProgress, setYoutubeProgress] = useState<string | null>(null);
+  const [youtubeSource, setYoutubeSource] = useState<string | null>(null);
+
   const recognitionRef = useRef<any>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const mediaStreamRef = useRef<MediaStream | null>(null);
+  const recorderTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const wantsListeningRef = useRef(false);
   const bufferRef = useRef<string[]>([]);
   const segmentTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -100,18 +108,67 @@ export default function PregacaoPage() {
   }
 
   useEffect(() => {
-    return () => { wantsListeningRef.current = false; stopSegmentTimer(); stopAutoSave(); recognitionRef.current?.stop(); };
+    return () => { stopListening(); };
   }, []);
+
+  function stopListening() {
+    wantsListeningRef.current = false;
+    recognitionRef.current?.stop();
+    recognitionRef.current = null;
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      mediaRecorderRef.current.stop();
+    }
+    mediaRecorderRef.current = null;
+    mediaStreamRef.current?.getTracks().forEach((t) => t.stop());
+    mediaStreamRef.current = null;
+    if (recorderTimerRef.current) { clearInterval(recorderTimerRef.current); recorderTimerRef.current = null; }
+    stopSegmentTimer();
+    stopAutoSave();
+  }
+
+  function startMediaRecorderMode(stream: MediaStream, sid: string | null) {
+    console.log('[Audio] Starting MediaRecorder + Gemini mode');
+    mediaStreamRef.current = stream;
+
+    function recordChunk() {
+      if (!wantsListeningRef.current || !mediaStreamRef.current) return;
+      const recorder = new MediaRecorder(mediaStreamRef.current, { mimeType: 'audio/webm;codecs=opus' });
+      const chunks: Blob[] = [];
+      recorder.ondataavailable = (e) => { if (e.data.size > 0) chunks.push(e.data); };
+      recorder.onstop = async () => {
+        if (chunks.length === 0) return;
+        const blob = new Blob(chunks, { type: 'audio/webm' });
+        if (blob.size < 1000) return;
+        setInterimText('Transcrevendo...');
+        try {
+          const result = await api.transcribeAudio(blob);
+          const text = result?.text?.trim();
+          if (text) {
+            addLineRef.current(text);
+          }
+        } catch (err) {
+          console.error('[Audio] Transcription error:', err);
+        }
+        setInterimText('');
+      };
+      mediaRecorderRef.current = recorder;
+      recorder.start();
+      setTimeout(() => {
+        if (recorder.state === 'recording' && wantsListeningRef.current) {
+          recorder.stop();
+        }
+      }, 30000);
+    }
+
+    recordChunk();
+    recorderTimerRef.current = setInterval(recordChunk, 32000);
+  }
 
   async function handleToggleListening() {
     setError(null);
     if (isListening) {
-      wantsListeningRef.current = false;
-      recognitionRef.current?.stop();
-      recognitionRef.current = null;
+      stopListening();
       flushBuffer();
-      stopSegmentTimer();
-      stopAutoSave();
       setIsListening(false);
       if (sermonId) {
         await api.updateSermon(sermonId, { lines: linesRef.current, status: 'ended' });
@@ -119,21 +176,14 @@ export default function PregacaoPage() {
       return;
     }
 
+    let stream: MediaStream;
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      stream.getTracks().forEach((t) => t.stop());
+      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     } catch {
       setError('Permissao de microfone negada.');
       return;
     }
 
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-      setError('Navegador nao suporta reconhecimento de voz. Use o Chrome.');
-      return;
-    }
-
-    // Create sermon in DB
     let sid = sermonId;
     if (!sid) {
       try {
@@ -143,12 +193,26 @@ export default function PregacaoPage() {
       } catch { /* continue without DB */ }
     }
 
+    wantsListeningRef.current = true;
+    setIsListening(true);
+    startSegmentTimer();
+    if (sid) startAutoSave();
+
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      startMediaRecorderMode(stream, sid);
+      return;
+    }
+
     const recognition = new SpeechRecognition();
     recognition.continuous = true;
     recognition.interimResults = true;
     recognition.lang = 'pt-BR';
 
+    let networkErrors = 0;
+
     recognition.onresult = (event: any) => {
+      networkErrors = 0;
       let finalText = '';
       let partialText = '';
       for (let i = event.resultIndex; i < event.results.length; i++) {
@@ -162,22 +226,80 @@ export default function PregacaoPage() {
 
     recognition.onerror = (event: any) => {
       if (event.error === 'aborted' || event.error === 'no-speech') return;
+      if (event.error === 'network') {
+        networkErrors++;
+        if (networkErrors >= 2 && wantsListeningRef.current) {
+          console.log('[Speech] Network errors, switching to Gemini mode');
+          recognition.abort();
+          recognitionRef.current = null;
+          startMediaRecorderMode(stream, sid);
+        }
+        return;
+      }
       setError(`Erro: ${event.error}`);
       wantsListeningRef.current = false;
       setIsListening(false);
     };
 
     recognition.onend = () => {
-      if (wantsListeningRef.current) { try { recognition.start(); } catch {} return; }
-      setIsListening(false);
+      if (wantsListeningRef.current && !mediaRecorderRef.current) {
+        try { recognition.start(); } catch {}
+        return;
+      }
+      if (!wantsListeningRef.current) setIsListening(false);
     };
 
     recognitionRef.current = recognition;
-    recognition.start();
-    wantsListeningRef.current = true;
-    setIsListening(true);
-    startSegmentTimer();
-    if (sid) startAutoSave();
+    try {
+      recognition.start();
+    } catch {
+      startMediaRecorderMode(stream, sid);
+      return;
+    }
+    mediaStreamRef.current = stream;
+  }
+
+  async function handleLoadYoutube() {
+    if (!youtubeUrl.trim()) return;
+    setLoadingYoutube(true);
+    setError(null);
+    setYoutubeProgress('Iniciando...');
+    setYoutubeSource(null);
+    try {
+      const res = await api.startYoutubeTranscript(youtubeUrl);
+      const jobId = res.jobId;
+
+      const poll = async (): Promise<void> => {
+        const status = await api.getYoutubeTranscriptStatus(jobId);
+        setYoutubeProgress(status.progress || 'Processando...');
+        if (status.status === 'done') {
+          // Parse transcript into lines
+          const transcriptLines = (status.transcript || '').split('\n').filter((l: string) => l.trim());
+          const parsed: LiveLine[] = transcriptLines.map((line: string, i: number) => {
+            const match = line.match(/^\[(\d{1,2}:\d{2})\]\s*(.*)/);
+            if (match) return { id: Date.now() + i, timestamp: match[1], text: match[2].trim() };
+            return { id: Date.now() + i, timestamp: '00:00', text: line.trim() };
+          }).filter((l: LiveLine) => l.text);
+          setLines(parsed);
+          if (status.sermonId) setSermonId(status.sermonId);
+          setYoutubeUrl('');
+          setYoutubeSource(status.source || 'Transcricao concluida');
+          setYoutubeProgress(null);
+          return;
+        }
+        if (status.status === 'error') {
+          throw new Error(status.error || 'Erro na transcricao.');
+        }
+        await new Promise((r) => setTimeout(r, 3000));
+        return poll();
+      };
+      await poll();
+    } catch (err: any) {
+      setError(err.message || 'Erro ao carregar YouTube.');
+      setYoutubeProgress(null);
+    } finally {
+      setLoadingYoutube(false);
+    }
   }
 
   function handleAddManual() {
@@ -272,6 +394,42 @@ export default function PregacaoPage() {
             >
               <Plus className="w-3.5 h-3.5" /> Adicionar trecho
             </button>
+          </div>
+
+          {/* YouTube import */}
+          <div className="card p-5">
+            <div className="flex items-center gap-2 mb-2">
+              <Youtube className="w-4 h-4 text-red-500" />
+              <label className="text-xs font-semibold text-text-secondary uppercase tracking-wider">Importar do YouTube</label>
+            </div>
+            <p className="text-[10px] text-text-muted mb-3">Cole o link do video. O sistema extrai legendas ou transcreve o audio via Gemini.</p>
+            <div className="flex gap-2">
+              <input
+                value={youtubeUrl}
+                onChange={(e) => setYoutubeUrl(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleLoadYoutube()}
+                placeholder="https://youtube.com/watch?v=..."
+                className="input-field flex-1 text-xs"
+              />
+              <button
+                onClick={handleLoadYoutube}
+                disabled={!youtubeUrl.trim() || loadingYoutube}
+                className="px-4 py-2 rounded-btn text-xs font-semibold bg-red-500 text-white disabled:opacity-40 shrink-0"
+              >
+                {loadingYoutube ? 'Transcrevendo...' : 'Transcrever'}
+              </button>
+            </div>
+            {loadingYoutube && youtubeProgress && (
+              <div className="mt-2 flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-50 border border-amber-200 text-[10px] text-amber-700">
+                <Loader2 className="w-3 h-3 animate-spin" />
+                {youtubeProgress}
+              </div>
+            )}
+            {youtubeSource && !loadingYoutube && (
+              <div className="mt-2 px-3 py-2 rounded-lg bg-green-50 border border-green-200 text-[10px] text-green-700">
+                {youtubeSource}
+              </div>
+            )}
           </div>
 
           {/* Generate content */}

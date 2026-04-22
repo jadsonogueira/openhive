@@ -403,4 +403,25 @@ export const api = {
     request<any>(`/api/sermons/${id}/generate`, { method: 'POST', body: JSON.stringify({ tone, format }) }),
   deleteSermonDraft: (sermonId: string, draftId: string) =>
     request(`/api/sermons/${sermonId}/drafts/${draftId}`, { method: 'DELETE' }),
+
+  // YouTube transcript
+  startYoutubeTranscript: (url: string) =>
+    request<any>('/api/youtube-transcript', { method: 'POST', body: JSON.stringify({ url }) }),
+  getYoutubeTranscriptStatus: (jobId: string) =>
+    request<any>(`/api/youtube-transcript/${jobId}`),
+
+  // Audio transcription
+  transcribeAudio: async (blob: Blob): Promise<{ text: string }> => {
+    const t = getToken();
+    const headers: Record<string, string> = { 'Content-Type': blob.type || 'audio/webm' };
+    if (t) headers['Authorization'] = `Bearer ${t}`;
+    const res = await fetch(`${BASE_URL}/api/transcribe-audio`, {
+      method: 'POST',
+      headers,
+      body: blob,
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data?.error || 'Transcription failed');
+    return data?.data;
+  },
 };

@@ -7,7 +7,7 @@ const router = Router();
 router.use(authMiddleware);
 
 function paramId(req: AuthRequest): string {
-  return paramId(req) as string;
+  return req.params.id as string;
 }
 
 // Create a new sermon session

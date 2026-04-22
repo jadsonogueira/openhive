@@ -18,6 +18,8 @@ import instagramRoutes from './routes/instagram.routes';
 import brandRoutes from './routes/brand.routes';
 import designSystemsRoutes from './routes/designSystems.routes';
 import sermonRoutes from './routes/sermon.routes';
+import youtubeRoutes from './routes/youtube.routes';
+import transcribeRoutes from './routes/transcribe.routes';
 import { publishWorker } from './jobs/publish.worker';
 import { tokenRefreshWorker, initTokenRefreshJob } from './jobs/token-refresh.worker';
 import { taskReminderWorker } from './jobs/task-reminder.worker';
@@ -25,6 +27,7 @@ import { taskReminderWorker } from './jobs/task-reminder.worker';
 const app = express();
 
 app.use(cors({ origin: true, credentials: true }));
+app.use('/api/transcribe-audio', express.raw({ type: '*/*', limit: '10mb' }), transcribeRoutes);
 app.use(express.json());
 app.use(apiLimiter);
 
@@ -43,6 +46,7 @@ app.use('/api/instagram', instagramRoutes);
 app.use('/api/brands', brandRoutes);
 app.use('/api/design-systems', designSystemsRoutes);
 app.use('/api/sermons', sermonRoutes);
+app.use('/api/youtube-transcript', youtubeRoutes);
 
 // Health check with env diagnostics
 app.get('/api/health', (_req, res) => {
